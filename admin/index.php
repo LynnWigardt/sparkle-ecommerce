@@ -1,0 +1,82 @@
+<?php
+
+require_once "../api/db.php";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $category_id = $_POST["category_id"];
+    $name = $_POST["name"];
+    $price = $_POST["price"];
+    $stock = $_POST["stock"];
+    $description = $_POST["description"];
+    $image = $_POST["image"];
+
+    $sql = "INSERT INTO products (category_id, name, description, price, stock, image)
+    VALUES (:category_id, :name, :description, :price, :stock, :image)";
+
+    $stmt = $pdo->prepare($sql);
+
+    $stmt->execute([
+        ":category_id" => $category_id,
+        ":name" => $name,
+        ":description" => $description,
+        ":price" => $price,
+        ":stock" => $stock,
+        ":image" => $image
+    ]);
+
+    echo "Produkten sparades.";
+}
+?>
+
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sparkle Admin</title>
+</head>
+<body>
+
+    <h1>Sparkle Admin</h1>
+
+
+    <h2>Lägg till produkt</h2>
+
+    <form method="POST">
+        <label for="category_id">Kategori:</label><br>
+
+        <select id="category_id" name="category_id">
+            <option value="1">Ringar</option>
+            <option value="2">Halsband</option>
+            <option value="3">Armband</option>
+            <option value="4">Örhänge</option>
+        </select>
+
+        <br><br>
+
+
+        <label for="name">Produktnamn:</label><br>
+        <input type="text" id="name" name="name">
+        <br><br>
+
+        <label for="price">Pris:</label><br>
+        <input type="number" id="price" name="price" step="0.01">
+        <br><br>
+
+        <label for="stock">Lagersaldo:</label><br>
+        <input type="number" id="stock" name="stock">
+        <br><br>
+
+        <label for="description">Beskrivning:</label><br>
+        <textarea id="description" name="description" rows="4" cols="40"></textarea>
+        <br><br>
+
+        <label for="image">Bild:</label><br>
+        <input type="text" id="image" name="image">
+        <br><br>
+
+        <button type="submit">Spara produkt</button>
+    </form>
+
+</body>
+</html>
