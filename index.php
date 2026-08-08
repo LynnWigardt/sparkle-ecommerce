@@ -22,18 +22,22 @@ $products = $stmt->fetchAll();
 
 <h1>Sparkle</h1>
 
+<div class="products">
+
 <?php foreach ($products as $product): ?>
 
-<div class="product">
+    <div class="product">
 
     <h2><?= $product["name"] ?></h2>
     <p><?= $product["price"] ?> kr</p>
     <p><?= $product["description"] ?></p>
     <img src="images/<?= $product["image"] ?>" alt="<?= $product["name"] ?>" width="200">
 
-</div>
+    </div>
 
     <?php endforeach; ?>
+
+</div>
 
 </body>
 </html>
