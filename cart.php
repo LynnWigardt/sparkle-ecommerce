@@ -76,3 +76,4 @@ echo "<h2>Totalt: " . $total . " kr</h2>";
 ?>
 
 <a href="index.php">Fortsätt handla</a>
+<a href="checkout.php">Till kassan</a>
