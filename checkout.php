@@ -4,6 +4,7 @@ session_start();
 
 require_once "api/db.php";
 
+
 if (!isset($_SESSION["cart"])) {
     $_SESSION["cart"] = [];
 }
@@ -18,7 +19,6 @@ foreach ($cart_items as $product_id => $quantity) {
     $sql = "SELECT * FROM products WHERE id = :id";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([":id" => $product_id]);
-
     $product = $stmt->fetch();
 
     echo "<h3>" . $product["name"] . "</h3>";
@@ -32,28 +32,85 @@ foreach ($cart_items as $product_id => $quantity) {
     $total += $item_total;
 }
 
+
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $first_name = $_POST["first_name"];
+    $last_name = $_POST["last_name"];
+    $email = $_POST["email"];
+
+    $sql = "INSERT INTO customers (first_name, last_name, email)
+            VALUES (:first_name, :last_name, :email)";
+
+    $stmt = $pdo->prepare($sql);
+
+    $stmt->execute([
+        ":first_name" => $first_name,
+        ":last_name" => $last_name,
+        ":email" => $email
+    ]);
+
+
+    $customer_id = $pdo->lastInsertId();
+
+
+    $sql = "INSERT INTO orders (customer_id, order_date, total_price)
+            VALUES (:customer_id, NOW(), :total_price)";
+
+    $stmt = $pdo->prepare($sql);
+
+    $stmt->execute([
+        ":customer_id" => $customer_id,
+        ":total_price" => $total
+    ]);
+
+    $order_id = $pdo->lastInsertId();
+}
+
+
 echo "<h2>Totalt: " . $total . " kr</h2>";
 
 ?>
 
+
+<form method="POST" action="checkout.php">
+
+    <h2>Kunduppgifter</h2>
+
+    <label for="first_name">Förnamn:</label>
+    <input type="text" id="first_name" name="first_name" required>
+
+    <label for="last_name">Efternamn:</label>
+    <input type="text" id="last_name" name="last_name" required>
+
+    <label for="email">E-mail:</label>
+    <input type="email" id="email" name="email" required>
+
+    <button type="submit">Slutför köp</button>
+
+</form>
+
+
 <!DOCTYPE html>
 <html lang="sv">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/style.css">
+
     <title>Kassa - Sparkle</title>
 </head>
 
 <body>
 
-<h1>Kassa</h1>
+    <h1>Kassa</h1>
 
-<h2> Din beställning</h2>
+    <h2>Din beställning</h2>
 
-<p>Produkter i din varukorg:</p>.
+    <p>Produkter i din varukorg:</p>
 
-<a href="cart.php">Tillbaka till varukorgen</a>
+    <a href="cart.php">Tillbaka till varukorgen</a>
 
 </body>
 </html>
