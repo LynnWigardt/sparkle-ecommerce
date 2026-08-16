@@ -2,6 +2,39 @@
 
 require_once "../api/db.php";
 
+
+$sql = "SELECT 
+    orders.id,
+    orders.customer_id,
+    orders.order_date,
+    orders.total_price,
+    customers.first_name,
+    customers.last_name,
+    customers.email
+    FROM orders
+    JOIN customers ON orders.customer_id = customers.id";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute();
+
+$orders = $stmt->fetchAll();
+
+echo "<pre>";
+print_r($orders);
+echo "</pre>";
+
+foreach ($orders as $order) {
+
+    echo "<h2>Order #" . $order["id"] . "</h2>";
+    echo "<p>Datum: " . $order["order_date"] . "</p>";
+    echo "<p>Kund: " . $order["first_name"] . " " . $order["last_name"] . "</p>";
+    echo "<p>E-mail: " . $order["email"] . "</p>";
+    echo "<p>Totalsumma: " . $order["total_price"] . " kr</p>";
+
+}
+
+
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $category_id = $_POST["category_id"];
     $name = $_POST["name"];
