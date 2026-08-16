@@ -65,7 +65,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     ]);
 
     $order_id = $pdo->lastInsertId();
+
+foreach ($cart_items as $product_id => $quantity) {
+    $sql = "INSERT INTO orderitems (order_id, product_id, quantity)
+            VALUES (:order_id, :product_id, :quantity)";
+
+    $stmt = $pdo->prepare($sql);
+
+    $stmt->execute([
+        ":order_id" => $order_id,
+        ":product_id" => $product_id,
+        ":quantity" => $quantity
+    ]);
 }
+}
+
+
 
 
 echo "<h2>Totalt: " . $total . " kr</h2>";
