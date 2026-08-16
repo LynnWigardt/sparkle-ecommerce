@@ -10,29 +10,39 @@ $sql = "SELECT
     orders.total_price,
     customers.first_name,
     customers.last_name,
-    customers.email
+    customers.email,
+    products.name AS product_name,
+    orderitems.quantity
     FROM orders
-    JOIN customers ON orders.customer_id = customers.id";
+    JOIN customers ON orders.customer_id = customers.id
+    JOIN orderitems ON orders.id = orderitems.order_id
+    JOIN products ON orderitems.product_id = products.id";
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute();
 
 $orders = $stmt->fetchAll();
 
-echo "<pre>";
-print_r($orders);
-echo "</pre>";
+
+
+$last_order_id = null;
 
 foreach ($orders as $order) {
+
+    if ($order["id"] != $last_order_id) {
 
     echo "<h2>Order #" . $order["id"] . "</h2>";
     echo "<p>Datum: " . $order["order_date"] . "</p>";
     echo "<p>Kund: " . $order["first_name"] . " " . $order["last_name"] . "</p>";
     echo "<p>E-mail: " . $order["email"] . "</p>";
     echo "<p>Totalsumma: " . $order["total_price"] . " kr</p>";
+    
+    echo "<h3>Produkter:</h3>";
+    $last_order_id = $order["id"];
+    }
 
+    echo "<p>" . $order["product_name"] . " - " . $order["quantity"] . " st</p>";
 }
-
 
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
