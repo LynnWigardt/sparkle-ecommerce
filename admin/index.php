@@ -51,7 +51,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $price = $_POST["price"];
     $stock = $_POST["stock"];
     $description = $_POST["description"];
-    $image = $_POST["image"];
+    $image = $_FILES["image"];
+
+if ($image["error"] !== UPLOAD_ERR_OK) {
+    die("Det gick inte att ladda upp bilden.");
+}
+
+    $file_name = $image["name"];
+    $tmp_name = $image["tmp_name"];
+
+    
 
     $sql = "INSERT INTO products (category_id, name, description, price, stock, image)
     VALUES (:category_id, :name, :description, :price, :stock, :image)";
@@ -85,7 +94,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     <h2>Lägg till produkt</h2>
 
-    <form method="POST">
+   <form method="POST" enctype="multipart/form-data">
         <label for="category_id">Kategori:</label><br>
 
         <select id="category_id" name="category_id">
@@ -115,7 +124,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <br><br>
 
         <label for="image">Bild:</label><br>
-        <input type="text" id="image" name="image">
+        <input type="file" id="image" name="image">
         <br><br>
 
         <button type="submit">Spara produkt</button>

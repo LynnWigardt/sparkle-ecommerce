@@ -15,5 +15,10 @@ $stmt->execute([
 $product = $stmt->fetch();
 
 echo "<h1>" . $product["name"] . "</h1>";
+echo "<img class='product-detail-image' src='" . $product["image"] . "' alt='" . $product["name"] . "'>";
 echo "<p>Pris: " . $product["price"] . " kr</p>";
 echo "<p>" . $product["description"] . "</p>";
+
+
+?>
+<link rel="stylesheet" href="css/style.css">
