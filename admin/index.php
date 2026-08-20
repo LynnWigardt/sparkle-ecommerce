@@ -118,6 +118,36 @@ if ($http_code < 200 || $http_code >= 300) {
 }
 ?>
 
+
+
+<?php
+
+$sql = "SELECT id, name, price FROM products";
+$stmt = $pdo->prepare($sql);
+$stmt->execute();
+
+$products = $stmt->fetchAll();
+
+?>
+
+<h2>Produkter</h2>
+
+<?php foreach ($products as $product): ?>
+
+    <p>
+    <?php echo $product["name"]; ?>
+    - <?php echo $product["price"]; ?> kr
+
+    <a href="edit_product.php?id=<?php echo $product["id"]; ?>">
+        Redigera
+    </a>
+</p>
+
+
+<?php endforeach; ?>
+
+
+
 <!DOCTYPE html>
 <html lang="sv">
 <head>
