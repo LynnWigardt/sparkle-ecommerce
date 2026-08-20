@@ -2,6 +2,21 @@
 
 require_once "../api/db.php";
 
+$env = parse_ini_file("../.env");
+
+if ($env === false) {
+    die("Kunde inte läsa .env");
+}
+
+if (!isset($env["SUPABASE_URL"]) || !isset($env["SUPABASE_SECRET_KEY"])) {
+    die("Supabase-inställningarna saknas i .env");
+}
+
+$supabase_url = $env["SUPABASE_URL"];
+$supabase_key = $env["SUPABASE_SECRET_KEY"];
+$bucket = "product-images";
+
+
 
 $sql = "SELECT 
     orders.id,
@@ -57,10 +72,33 @@ if ($image["error"] !== UPLOAD_ERR_OK) {
     die("Det gick inte att ladda upp bilden.");
 }
 
-    $file_name = $image["name"];
+    $file_extension = pathinfo($image["name"], PATHINFO_EXTENSION);
+    $file_name = uniqid() . "." . strtolower($file_extension);
     $tmp_name = $image["tmp_name"];
 
-    
+    $storage_url = $supabase_url . "/storage/v1/object/" . $bucket . "/" . $file_name;
+
+    $ch = curl_init($storage_url);
+
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents($tmp_name));
+
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    "Authorization: Bearer " . $supabase_key,
+    "apikey: " . $supabase_key,
+    "Content-Type: " . $image["type"]
+]);
+
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+$response = curl_exec($ch);
+$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+curl_close($ch);
+
+if ($http_code < 200 || $http_code >= 300) {
+    die("Supabase svarade med HTTP " . $http_code . ": " . $response);
+}
 
     $sql = "INSERT INTO products (category_id, name, description, price, stock, image)
     VALUES (:category_id, :name, :description, :price, :stock, :image)";
@@ -73,7 +111,7 @@ if ($image["error"] !== UPLOAD_ERR_OK) {
         ":description" => $description,
         ":price" => $price,
         ":stock" => $stock,
-        ":image" => $image
+        ":image" => $storage_url
     ]);
 
     echo "Produkten sparades.";
