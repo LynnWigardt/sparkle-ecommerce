@@ -30,10 +30,12 @@ $products = $stmt->fetchAll();
 
     <div class="product">
 
+    <a href="product.php?id=<?= $product["id"] ?>" class="product-link">
     <h2><?= $product["name"] ?></h2>
     <p><?= $product["price"] ?> kr</p>
     <p><?= $product["description"] ?></p>
-    <img src="images/<?= $product["image"] ?>" alt="<?= $product["name"] ?>" width="200">
+    <img src="<?= $product["image"] ?>" alt="<?= $product["name"] ?>" width="200">
+    </a>
 
     <form method="POST" action="cart.php">
         <input type="hidden" name="product_id" value="<?= $product["id"] ?>">
