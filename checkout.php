@@ -13,6 +13,7 @@ $cart_items = array_count_values($_SESSION["cart"]);
 
 $total = 0;
 
+$order_completed = false;
 
 foreach ($cart_items as $product_id => $quantity) {
 
@@ -21,13 +22,7 @@ foreach ($cart_items as $product_id => $quantity) {
     $stmt->execute([":id" => $product_id]);
     $product = $stmt->fetch();
 
-    echo "<h3>" . $product["name"] . "</h3>";
-    echo "<p>Antal: " . $quantity . "</p>";
-    echo "<p>Pris: " . $product["price"] . " kr</p>";
-
     $item_total = $product["price"] * $quantity;
-
-    echo "<p>Summa: " . $item_total . " kr</p>";
 
     $total += $item_total;
 }
@@ -78,15 +73,15 @@ foreach ($cart_items as $product_id => $quantity) {
         ":quantity" => $quantity
     ]);
 }
+
+$order_completed = true;
+
 }
 
 
-
-
-echo "<h2>Totalt: " . $total . " kr</h2>";
-
 ?>
 
+<?php if (!$order_completed): ?>
 
 <form method="POST" action="checkout.php">
 
@@ -105,6 +100,15 @@ echo "<h2>Totalt: " . $total . " kr</h2>";
 
 </form>
 
+<?php endif; ?>
+
+<?php if ($order_completed): ?>
+
+    <h2>Tack för din beställning <?= $first_name ?> <?= $last_name ?>!</h2>
+
+    <p>Din order har registrerats på <?= $email ?>.</p>
+
+<?php endif; ?>
 
 <!DOCTYPE html>
 <html lang="sv">
@@ -123,9 +127,28 @@ echo "<h2>Totalt: " . $total . " kr</h2>";
 
     <h2>Din beställning</h2>
 
-    <p>Produkter i din varukorg:</p>
+    <?php foreach ($cart_items as $product_id => $quantity): ?>
 
-    <a href="cart.php">Tillbaka till varukorgen</a>
+   <?php
+    $sql = "SELECT * FROM products WHERE id = :id";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([":id" => $product_id]);
+    $product = $stmt->fetch();
+
+    $item_total = $product["price"] * $quantity;
+    ?>
+
+    <h3><?= $product["name"] ?></h3>
+    <p>Antal: <?= $quantity ?></p>
+    <p>Pris: <?= $product["price"] ?> kr</p>
+    <p>Summa: <?= $item_total ?> kr</p>
+
+
+<?php endforeach; ?>
+
+<h2>Totalt: <?= $total ?> kr</h2>
+
+<a href="cart.php">Tillbaka till varukorgen</a>
 
 </body>
 </html>

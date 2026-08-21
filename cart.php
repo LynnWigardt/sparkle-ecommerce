@@ -48,16 +48,11 @@ $product = $stmt->fetch();
 
 echo "<div class='cart-product'>";
 
-echo "<img src='images/" . $product["image"] . "' width='150'>";
-
+echo "<img src='" . $product["image"] . "' width='150'>";
 echo "<h2>" . $product["name"] . "</h2>";
-
 echo "<p>" . $product["price"] . " kr</p>";
-
 echo "<p>Antal: " . $quantity . "</p>";
-
 $item_total = $product["price"] * $quantity;
-
 echo "<p>Summa: " . $item_total . " kr</p>";
 
 echo "<form method='POST' action='cart.php'>";
