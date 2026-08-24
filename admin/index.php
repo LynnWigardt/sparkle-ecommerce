@@ -1,21 +1,7 @@
 <?php
 
 require_once "../api/db.php";
-
-$env = parse_ini_file("../.env");
-
-if ($env === false) {
-    die("Kunde inte läsa .env");
-}
-
-if (!isset($env["SUPABASE_URL"]) || !isset($env["SUPABASE_SECRET_KEY"])) {
-    die("Supabase-inställningarna saknas i .env");
-}
-
-$supabase_url = $env["SUPABASE_URL"];
-$supabase_key = $env["SUPABASE_SECRET_KEY"];
-$bucket = "product-images";
-
+require_once "config.php";
 
 
 $sql = "SELECT 
