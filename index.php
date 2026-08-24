@@ -18,11 +18,33 @@ $products = $stmt->fetchAll();
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="css/style.css">
         <title>Sparkle</title>
-</head>
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+    </head>
 
 <body>
 
-<h1>Sparkle</h1>
+<header class="site-header">
+    <div class="logo">Sparkle</div>
+
+    <nav>
+        <a href="index.php">Hem</a>
+        <a href="#collection">Kollektion</a>
+        <a href="#">Om oss</a>
+        <a href="#">Kontakt</a>
+    </nav>
+
+    <a href="cart.php" class="cart-link">🛒 Varukorg</a>
+</header>
+
+<section class="hero">
+    <h1>Sparkle</h1>
+    <p>TIMELESS ELEGANCE</p>
+</section>
+
+<div class="products" id="collection">
 
 <div class="products">
 
