@@ -52,39 +52,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $price = $_POST["price"];
     $stock = $_POST["stock"];
     $description = $_POST["description"];
-    $image = $_FILES["image"];
+    $image = $_POST["image"];
 
-if ($image["error"] !== UPLOAD_ERR_OK) {
-    die("Det gick inte att ladda upp bilden.");
-}
-
-    $file_extension = pathinfo($image["name"], PATHINFO_EXTENSION);
-    $file_name = uniqid() . "." . strtolower($file_extension);
-    $tmp_name = $image["tmp_name"];
-
-    $storage_url = $supabase_url . "/storage/v1/object/" . $bucket . "/" . $file_name;
-
-    $ch = curl_init($storage_url);
-
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents($tmp_name));
-
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    "Authorization: Bearer " . $supabase_key,
-    "apikey: " . $supabase_key,
-    "Content-Type: " . $image["type"]
-]);
-
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-$response = curl_exec($ch);
-$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-curl_close($ch);
-
-if ($http_code < 200 || $http_code >= 300) {
-    die("Supabase svarade med HTTP " . $http_code . ": " . $response);
-}
 
     $sql = "INSERT INTO products (category_id, name, description, price, stock, image)
     VALUES (:category_id, :name, :description, :price, :stock, :image)";
@@ -97,7 +66,7 @@ if ($http_code < 200 || $http_code >= 300) {
         ":description" => $description,
         ":price" => $price,
         ":stock" => $stock,
-        ":image" => $storage_url
+        ":image" => $image
     ]);
 
     echo "Produkten sparades.";
@@ -148,7 +117,7 @@ $products = $stmt->fetchAll();
 
     <h2>Lägg till produkt</h2>
 
-   <form method="POST" enctype="multipart/form-data">
+        <form method="POST">
         <label for="category_id">Kategori:</label><br>
 
         <select id="category_id" name="category_id">
@@ -177,8 +146,8 @@ $products = $stmt->fetchAll();
         <textarea id="description" name="description" rows="4" cols="40"></textarea>
         <br><br>
 
-        <label for="image">Bild:</label><br>
-        <input type="file" id="image" name="image">
+        <label for="image">Bild-URL:</label><br>
+        <input type="text" id="image" name="image">
         <br><br>
 
         <button type="submit">Spara produkt</button>
