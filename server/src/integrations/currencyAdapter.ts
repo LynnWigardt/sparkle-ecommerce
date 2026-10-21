@@ -1,4 +1,9 @@
+
 const API_URL = 'https://api.frankfurter.dev/v1'
+
+type ExchangeRateResponse = {
+  rates: Record<string, number>
+}
 
 export async function getExchangeRate(
   from: string,
@@ -12,7 +17,13 @@ export async function getExchangeRate(
     throw new Error('Could not fetch exchange rate')
   }
 
-  const data = await response.json()
+  const data = (await response.json()) as ExchangeRateResponse
 
-  return data.rates[to]
+  const rate = data.rates[to]
+
+  if (typeof rate !== 'number') {
+    throw new Error(`Exchange rate for ${to} was not found`)
+  }
+
+  return rate
 }

@@ -1,5 +1,8 @@
 import express from 'express'
 import { getExchangeRate } from './integrations/currencyAdapter.ts'
+import { supabase } from './supabase.ts'
+import { getSupplierCatalog } from './integrations/supplierAdapter.ts'
+import { importSupplierProducts } from './integrations/productImport.ts'
 
 const app = express()
 
@@ -25,6 +28,67 @@ app.get('/api/currency', async (req, res) => {
 })
 
 const PORT = process.env.PORT ?? 3000
+
+app.get('/api/test-supabase', async (_req, res) => {
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+
+  if (error) {
+    res.status(500).json({ error: error.message })
+    return
+  }
+
+  res.json({ success: true, categories: data })
+})
+
+
+app.post('/api/test-supabase', async (_req, res) => {
+  const { data, error } = await supabase
+    .from('categories')
+    .insert({ name: 'Testkategori' })
+    .select()
+    .single()
+
+  if (error) {
+    res.status(500).json({ error: error.message })
+    return
+  }
+
+  res.json({ success: true, category: data })
+})
+
+app.get('/api/test-supplier', async (_req, res) => {
+  try {
+    const products = await getSupplierCatalog()
+
+    res.json({
+      success: true,
+      count: products.length,
+      products,
+    })
+  } catch (error) {
+    console.error('Supplier test failed:', error)
+
+    res.status(500).json({
+      error: 'Could not fetch supplier products',
+    })
+  }
+})
+
+app.post('/api/import-products', async (_req, res) => {
+  try {
+    const result = await importSupplierProducts()
+    res.json({ success: true, ...result })
+  } catch (error) {
+    console.error('Product import failed:', error)
+
+    res.status(500).json({
+      success: false,
+      error: 'Could not import supplier products',
+    })
+  }
+})
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
