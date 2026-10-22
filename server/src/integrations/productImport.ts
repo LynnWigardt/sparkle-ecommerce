@@ -1,7 +1,10 @@
 
 import { z } from 'zod'
 import { supabase } from '../supabase.ts'
-import { getSupplierCatalog } from './supplierAdapter.ts'
+import {
+  getSupplierCatalog,
+  type CatalogFormat,
+} from './supplierAdapter.ts'
 
 const productSchema = z.object({
   sku: z.string().trim().min(1),
@@ -12,8 +15,10 @@ const productSchema = z.object({
   variants: z.array(z.string()),
 })
 
-export async function importSupplierProducts() {
-  const candidates = await getSupplierCatalog()
+export async function importSupplierProducts(
+  format: CatalogFormat = 'csv',
+) {
+  const candidates = await getSupplierCatalog(format)
 
   let inserted = 0
   let updated = 0

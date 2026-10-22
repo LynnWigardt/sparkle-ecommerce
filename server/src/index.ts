@@ -76,17 +76,18 @@ app.get('/api/test-supplier', async (_req, res) => {
   }
 })
 
-app.post('/api/import-products', async (_req, res) => {
+
+app.post('/api/import-products', async (req, res) => {
+  const format = req.query.format === 'xml' ? 'xml' : 'csv'
+
   try {
-    const result = await importSupplierProducts()
+    const result = await importSupplierProducts(format)
     res.json({ success: true, ...result })
   } catch (error) {
-    console.error('Product import failed:', error)
+    const message =
+      error instanceof Error ? error.message : 'Ett okänt fel inträffade'
 
-    res.status(500).json({
-      success: false,
-      error: 'Could not import supplier products',
-    })
+    res.status(500).json({ success: false, error: message })
   }
 })
 

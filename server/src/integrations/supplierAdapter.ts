@@ -1,9 +1,14 @@
+
 import { parse } from 'csv-parse/sync'
+import { XMLParser } from 'fast-xml-parser'
+import { SyntaxValidator } from 'fast-xml-validator'
 
 const BASE_URL = process.env.SUPPLIER_API_URL
 const API_KEY = process.env.SUPPLIER_API_KEY ?? ''
 const TIMEOUT_MS = Number(process.env.SUPPLIER_API_TIMEOUT_MS ?? 5000)
 const BRANSCH = process.env.SUPPLIER_BRANSCH ?? 'skonhet'
+
+export type CatalogFormat = 'csv' | 'xml'
 
 export type ProductCandidate = {
   sku: string | undefined
@@ -14,6 +19,16 @@ export type ProductCandidate = {
   variants: string[]
 }
 
+function toNumber(text: string): number {
+  return Number(text.replace(',', '.'))
+}
+
+function toStock(text: string): number {
+  return text === '' ? 0 : Number(text)
+}
+
+/* CSV */
+
 type CsvRow = {
   artNr: string
   ean: string
@@ -21,16 +36,6 @@ type CsvRow = {
   pris: string
   lagersaldo: string
   varianter: string
-}
-
-function parseDecimal(value: unknown): number {
-  const text = String(value ?? '').replace(/\s/g, '').replace(',', '.')
-  return text === '' ? NaN : Number(text)
-}
-
-function parseStock(value: unknown): number {
-  const text = String(value ?? '').trim()
-  return text === '' ? 0 : Number(text)
 }
 
 function parseCsvCatalog(buffer: Buffer): ProductCandidate[] {
@@ -45,23 +50,64 @@ function parseCsvCatalog(buffer: Buffer): ProductCandidate[] {
 
   return rows.map((row) => ({
     sku: row.artNr || undefined,
-    ean: String(row.ean ?? ''),
-    name: String(row.benamning ?? ''),
-    price: parseDecimal(row.pris),
-    stock: parseStock(row.lagersaldo),
-    variants: row.varianter
-      ? String(row.varianter).split('|')
-      : [],
+    ean: row.ean,
+    name: row.benamning,
+    price: toNumber(row.pris),
+    stock: toStock(row.lagersaldo),
+    variants: row.varianter ? row.varianter.split('|') : [],
   }))
 }
 
-export async function getSupplierCatalog(): Promise<ProductCandidate[]> {
+/* XML */
+
+type XmlProduct = {
+  '@_artNr': string
+  ean: string
+  benamning: string
+  pris: { '#text': string }
+  lagersaldo: string
+  varianter?: { variant: string[] }
+}
+
+const xmlParser = new XMLParser({
+  ignoreAttributes: false,
+  parseTagValue: true,
+  isArray: (name) => name === 'produkt' || name === 'variant',
+})
+
+function parseXmlCatalog(buffer: Buffer): ProductCandidate[] {
+  const xml = new TextDecoder('utf-8').decode(buffer)
+  const validation = SyntaxValidator.validate(xml)
+
+  if (validation !== true) {
+    throw new Error('Leverantörens XML-fil har ogiltig syntax')
+  }
+
+  const doc: { katalog: { produkt: XmlProduct[] } } = xmlParser.parse(xml)
+
+  return doc.katalog.produkt.map((product) => ({
+    sku: product['@_artNr'] || undefined,
+    ean: String(product.ean),
+    name: product.benamning,
+    price: toNumber(product.pris['#text']),
+    stock: toStock(product.lagersaldo),
+    variants: product.varianter?.variant ?? [],
+  }))
+}
+
+/* API */
+
+export async function getSupplierCatalog(
+  format: CatalogFormat = 'csv',
+): Promise<ProductCandidate[]> {
   if (!BASE_URL) {
     throw new Error('SUPPLIER_API_URL saknas i .env')
   }
 
+  const extension = format === 'xml' ? 'xml' : 'csv'
+
   const response = await fetch(
-    `${BASE_URL}/export/products.csv?bransch=${BRANSCH}`,
+    `${BASE_URL}/export/products.${extension}?bransch=${BRANSCH}`,
     {
       headers: { 'X-Api-Key': API_KEY },
       signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -74,5 +120,7 @@ export async function getSupplierCatalog(): Promise<ProductCandidate[]> {
 
   const buffer = Buffer.from(await response.arrayBuffer())
 
-  return parseCsvCatalog(buffer)
+  return format === 'xml'
+    ? parseXmlCatalog(buffer)
+    : parseCsvCatalog(buffer)
 }
