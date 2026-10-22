@@ -20,8 +20,13 @@ export type ProductCandidate = {
 }
 
 function toNumber(text: string): number {
+  return Number(String(text).replace(',', '.'))
+}
+/*
+function toNumber(text: string): number {
   return Number(text.replace(',', '.'))
 }
+*/
 
 function toStock(text: string): number {
   return text === '' ? 0 : Number(text)
