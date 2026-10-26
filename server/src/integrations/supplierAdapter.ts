@@ -76,7 +76,7 @@ type XmlProduct = {
 
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
-  parseTagValue: true,
+  parseTagValue: false,
   isArray: (name) => name === 'produkt' || name === 'variant',
 })
 
