@@ -51,3 +51,39 @@ Projektet kan köras lokalt med XAMPP.
 5. Öppna projektet via localhost i webbläsaren:
 
 `http://localhost/fsu25d-systemutveckling-uppgift-1-min-egna-e-handel-LynnWigardt/`
+
+
+
+-------------------------------------------------------------------
+
+
+## Integration Course – React and TypeScript
+
+Den nya versionen av Sparkle utvecklas med React, TypeScript,
+Node.js och Express. Supabase används för databasen.
+
+
+### Leverantörsintegration
+
+Produkter importeras från en extern leverantör via CSV
+och XML. Importen validerar produktdata och uppdaterar
+befintliga produkter baserat på artikelnummer.
+
+Felaktiga produkter hoppas över och rapporteras med en orsak.
+
+
+### Hantering av produktdata
+
+- EAN sparas som text för att bevara eventuella inledande nollor.
+- Produktvarianter sparas som en lista.
+- Produkter utan giltigt pris importeras inte.
+
+
+### Miljövariabler
+
+Skapa en egen `.env` utifrån `server/.env.example`.
+Fyll i de miljövariabler som behövs för att ansluta
+till Supabase och leverantörens API.
+
+Den riktiga `.env`-filen innehåller hemligheter och
+ska inte laddas upp till GitHub.
