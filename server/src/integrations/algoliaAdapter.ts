@@ -35,3 +35,10 @@ export async function syncProductToAlgolia(product: {
     },
   })
 }
+
+export async function deleteProductFromAlgolia(articleNumber: string) {
+  await adminClient.deleteObject({
+    indexName,
+    objectID: articleNumber,
+  })
+}

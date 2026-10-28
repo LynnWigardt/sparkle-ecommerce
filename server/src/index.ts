@@ -4,7 +4,12 @@ import { supabase } from './supabase.ts'
 import { getSupplierCatalog } from './integrations/supplierAdapter.ts'
 import { importSupplierProducts } from './integrations/productImport.ts'
 import { z } from 'zod'
-import { searchClient, indexName } from './integrations/algoliaAdapter.ts'
+import { importOldSparkleProducts } from './integrations/OldSparkleProductsImport.ts'
+import {
+  searchClient,
+  indexName,
+  deleteProductFromAlgolia,
+} from './integrations/algoliaAdapter.ts'
 
 const app = express()
 
@@ -135,6 +140,60 @@ app.post('/api/import-products', async (req, res) => {
       error instanceof Error ? error.message : 'Ett okänt fel inträffade'
 
     res.status(500).json({ success: false, error: message })
+  }
+})
+
+app.delete('/api/products/:articleNumber', async (req, res) => {
+  const articleNumber = req.params.articleNumber
+
+  const { error } = await supabase
+    .from('products')
+    .delete()
+    .eq('article_number', articleNumber)
+
+  if (error) {
+    res.status(500).json({
+      error: 'Kunde inte ta bort produkten från databasen.',
+    })
+    return
+  }
+
+  try {
+    await deleteProductFromAlgolia(articleNumber)
+
+    res.json({
+      success: true,
+      message: 'Produkten har tagits bort.',
+    })
+  } catch (error) {
+    console.error(
+      `Produkten ${articleNumber} togs bort från databasen men inte från Algolia:`,
+      error,
+    )
+
+    res.status(500).json({
+      success: false,
+      message: 'Produkten togs bort från databasen, men sökindexet kunde inte uppdateras.',
+    })
+  }
+})
+
+app.post('/api/import-old-sparkle-products', async (_req, res) => {
+  try {
+    const result = await importOldSparkleProducts()
+
+    res.json({
+      success: true,
+      ...result,
+    })
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Ett okänt fel inträffade'
+
+    res.status(500).json({
+      success: false,
+      error: message,
+    })
   }
 })
 

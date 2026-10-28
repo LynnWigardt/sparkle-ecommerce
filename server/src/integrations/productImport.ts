@@ -1,4 +1,3 @@
-
 import { z } from 'zod'
 import { supabase } from '../supabase.ts'
 import {
@@ -24,6 +23,7 @@ export async function importSupplierProducts(
   let inserted = 0
   let updated = 0
   const skipped: { sku: string | null; reason: string }[] = []
+  const syncFailed: { sku: string; reason: string }[] = []
 
   for (const candidate of candidates) {
     const validation = productSchema.safeParse(candidate)
@@ -89,17 +89,26 @@ try {
     variants: product.variants,
   })
 } catch (error) {
+  const reason =
+    error instanceof Error ? error.message : 'Okänt fel'
+
   console.error(
     `Produkten ${product.sku} sparades i databasen men kunde inte synkas till Algolia:`,
     error,
   )
+
+  syncFailed.push({
+    sku: product.sku,
+    reason,
+  })
 }
 }
 
-  return {
-    received: candidates.length,
-    inserted,
-    updated,
-    skipped,
-  }
+return {
+  received: candidates.length,
+  inserted,
+  updated,
+  skipped,
+  syncFailed,
+}
 }

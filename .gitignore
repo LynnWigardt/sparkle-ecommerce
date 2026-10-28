@@ -1,3 +1,4 @@
 .env
 admin/config.php
 node_modules/
+databaseBackup/
