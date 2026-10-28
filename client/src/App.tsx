@@ -1,7 +1,15 @@
 import AdminPage from './AdminPage'
+import SearchPage from './SearchPage'
 
 function App() {
-return <AdminPage />
+ return (
+    <div>
+      <SearchPage/>
+      <hr/>
+      <AdminPage/>
+    </div>
+  )
 }
+
 
 export default App

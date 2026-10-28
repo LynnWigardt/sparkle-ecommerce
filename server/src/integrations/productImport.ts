@@ -5,6 +5,7 @@ import {
   getSupplierCatalog,
   type CatalogFormat,
 } from './supplierAdapter.ts'
+import { syncProductToAlgolia } from './algoliaAdapter.ts'
 
 const productSchema = z.object({
   sku: z.string().trim().min(1),
@@ -72,12 +73,28 @@ export async function importSupplierProducts(
       continue
     }
 
-    if (existing) {
-      updated++
-    } else {
-      inserted++
-    }
-  }
+ if (existing) {
+  updated++
+} else {
+  inserted++
+}
+
+try {
+  await syncProductToAlgolia({
+    article_number: product.sku,
+    name: product.name,
+    price: product.price,
+    stock: product.stock,
+    ean: product.ean || null,
+    variants: product.variants,
+  })
+} catch (error) {
+  console.error(
+    `Produkten ${product.sku} sparades i databasen men kunde inte synkas till Algolia:`,
+    error,
+  )
+}
+}
 
   return {
     received: candidates.length,

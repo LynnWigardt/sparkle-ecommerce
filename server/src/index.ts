@@ -3,6 +3,8 @@ import { getExchangeRate } from './integrations/currencyAdapter.ts'
 import { supabase } from './supabase.ts'
 import { getSupplierCatalog } from './integrations/supplierAdapter.ts'
 import { importSupplierProducts } from './integrations/productImport.ts'
+import { z } from 'zod'
+import { searchClient, indexName } from './integrations/algoliaAdapter.ts'
 
 const app = express()
 
@@ -28,6 +30,51 @@ app.get('/api/currency', async (req, res) => {
 })
 
 const PORT = process.env.PORT ?? 3000
+
+const searchSchema = z.object({
+  q: z.string().trim().max(200).default(''),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(10),
+})
+
+app.get('/api/search', async (req, res) => {
+  const validation = searchSchema.safeParse(req.query)
+
+  if (!validation.success) {
+    res.status(400).json({
+      error: 'Ogiltiga sökinställningar. Sidnumret måste vara minst 1 och högst 50 produkter per sida.',
+    })
+    return
+  }
+
+  const { q, page, pageSize } = validation.data
+
+  try {
+    const result = await searchClient.searchSingleIndex({
+      indexName,
+      searchParams: {
+        query: q,
+        page: page - 1,
+        hitsPerPage: pageSize,
+      },
+    })
+
+    res.json({
+      query: q,
+      products: result.hits,
+      totalHits: result.nbHits,
+      totalPages: result.nbPages,
+      page,
+      pageSize,
+    })
+  } catch (error) {
+    console.error('Algolia search failed:', error)
+
+    res.status(500).json({
+      error: 'Sökningen kunde tyvärr inte genomföras. Försök igen senare.',
+    })
+  }
+})
 
 app.get('/api/test-supabase', async (_req, res) => {
   const { data, error } = await supabase
