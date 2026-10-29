@@ -4,6 +4,7 @@ import { getExchangeRate } from './integrations/currencyAdapter.ts'
 import { supabase } from './supabase.ts'
 import { getSupplierCatalog } from './integrations/supplierAdapter.ts'
 import { importSupplierProducts } from './integrations/productImport.ts'
+import checkoutRouter from './checkout.ts'
 import {
   importOldSparkleProducts,
   syncOldSparkleProductsToAlgolia,
@@ -18,6 +19,8 @@ import {
 
 const app = express()
 app.use(express.json())
+
+app.use(checkoutRouter)
 
 const PORT = process.env.PORT ?? 3000
 
