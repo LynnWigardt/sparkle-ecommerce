@@ -4,7 +4,10 @@ import { supabase } from './supabase.ts'
 import { getSupplierCatalog } from './integrations/supplierAdapter.ts'
 import { importSupplierProducts } from './integrations/productImport.ts'
 import { z } from 'zod'
-import { importOldSparkleProducts } from './integrations/OldSparkleProductsImport.ts'
+import {
+  importOldSparkleProducts,
+  syncOldSparkleProductsToAlgolia,
+} from './integrations/OldSparkleProductsImport.ts'
 import {
   searchClient,
   indexName,
@@ -194,6 +197,17 @@ app.post('/api/import-old-sparkle-products', async (_req, res) => {
       success: false,
       error: message,
     })
+  }
+})
+
+app.post('/api/sync-old-sparkle-to-algolia', async (_req, res) => {
+  try {
+    const result = await syncOldSparkleProductsToAlgolia()
+    res.json({ success: true, ...result })
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Ett okänt fel inträffade'
+    res.status(500).json({ success: false, error: message })
   }
 })
 

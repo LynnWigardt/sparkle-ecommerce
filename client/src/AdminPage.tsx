@@ -20,10 +20,12 @@ function AdminPage() {
         throw new Error(data.error || 'Importen misslyckades')
       }
 
-      setMessage(
-        `Import klar! Nya produkter: ${data.inserted}, uppdaterade: ${data.updated}, överhoppade: ${data.skipped.length}`,
-      )
-        setSkipped(data.skipped)
+   setSkipped(data.skipped ?? [])
+
+    setMessage(
+      `Import klar! Mottagna: ${data.received}, nya: ${data.inserted}, uppdaterade: ${data.updated}, överhoppade: ${data.skipped?.length ?? 0}, synkfel: ${data.syncFailed?.length ?? 0}`,
+    )
+    
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : 'Något gick fel',
@@ -52,7 +54,7 @@ function AdminPage() {
       </button>
 
       {message && <p>{message}</p>}
-
+      
       {skipped.length > 0 && (
   <ul>
     {skipped.map((product) => (

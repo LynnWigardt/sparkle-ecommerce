@@ -190,13 +190,16 @@ export async function importOldSparkleProducts() {
 
     try {
       await syncProductToAlgolia({
-        article_number: product.article_number,
-        name: product.name,
-        price: product.price,
-        stock: product.stock,
-        ean: null,
-        variants: [],
-      })
+  article_number: product.article_number,
+  name: product.name,
+  description: product.description,
+  category_id: product.category_id,
+  image_url: product.image_url,
+  price: product.price,
+  stock: product.stock,
+  ean: null,
+  variants: [],
+})
 
       inserted++
     } catch (error) {
@@ -211,4 +214,39 @@ export async function importOldSparkleProducts() {
   }
 
   return { inserted, errors }
+}
+
+export async function syncOldSparkleProductsToAlgolia() {
+  const { data: products, error } = await supabase
+    .from('products')
+    .select(
+      'article_number, name, description, category_id, image_url, price, stock, ean, variants',
+    )
+    .like('article_number', 'OLD-%')
+
+  if (error) {
+    throw new Error(
+      `Kunde inte hämta gamla Sparkle-produkter: ${error.message}`,
+    )
+  }
+
+  let synced = 0
+
+  for (const product of products ?? []) {
+    await syncProductToAlgolia({
+      article_number: product.article_number,
+      name: product.name,
+      description: product.description,
+      category_id: product.category_id,
+      image_url: product.image_url,
+      price: product.price,
+      stock: product.stock,
+      ean: product.ean,
+      variants: product.variants ?? [],
+    })
+
+    synced++
+  }
+
+  return { synced }
 }

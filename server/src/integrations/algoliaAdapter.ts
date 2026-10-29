@@ -16,22 +16,28 @@ const indexName = 'sparkle_products'
 export { adminClient, searchClient, indexName }
 
 export async function syncProductToAlgolia(product: {
-  article_number: string
-  name: string
-  price: number
-  stock: number
-  ean: string | null
-  variants: string[]
+    article_number: string
+    name: string
+    description: string | null
+    category_id: number | null
+    image_url: string | null
+    price: number
+    stock: number
+    ean: string | null
+    variants: string[]
 }) {
   await adminClient.saveObject({
     indexName,
     body: {
-      objectID: product.article_number,
-      name: product.name,
-      price: product.price,
-      stock: product.stock,
-      ean: product.ean,
-      variants: product.variants,
+    objectID: product.article_number,
+    name: product.name,
+    description: product.description,
+    category_id: product.category_id,
+    image_url: product.image_url,
+    price: product.price,
+    stock: product.stock,
+    ean: product.ean,
+    variants: product.variants,
     },
   })
 }

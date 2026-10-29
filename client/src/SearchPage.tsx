@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 type Product = {
   objectID: string
   name: string
   price: number
+  description?: string | null
+  image_url?: string | null
 }
 
 type SearchResult = {
@@ -29,7 +31,7 @@ function SearchPage() {
       const params = new URLSearchParams({
         q: query,
         page: String(nextPage),
-        pageSize: '10',
+        pageSize: '16',
       })
 
       const response = await fetch(`/api/search?${params}`)
@@ -53,9 +55,13 @@ function SearchPage() {
     }
   }
 
+  useEffect(() => {
+    searchProducts()
+  }, [])
+
   return (
     <section>
-      <h1>Sök produkter</h1>
+      <h1>Sparkle – våra produkter</h1>
 
       <form
         onSubmit={(event) => {
@@ -68,31 +74,45 @@ function SearchPage() {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Sök efter en produkt..."
-          aria-label="Sök efter en produkt"
-        />
+          aria-label="Sök efter en produkt"/>
 
         <button type="submit" disabled={loading}>
           Sök
         </button>
       </form>
 
-      {loading && <p>Söker produkter...</p>}
+      {loading && <p>Hämtar produkter...</p>}
       {message && <p role="alert">{message}</p>}
 
-         {result && (
+      {result && (
         <div>
           <p>
             {result.totalHits} träffar – sida {result.page} av{' '}
             {result.totalPages}
           </p>
 
-          <ul>
+          <div className="product-grid">
             {result.products.map((product) => (
-              <li key={product.objectID}>
-                {product.name} – {product.price} kr
-              </li>
+              <article className="product-card" key={product.objectID}>
+           {product.image_url ? (
+            <img
+                src={product.image_url}
+                alt={product.name}
+                className="product-image"/>
+            ) : (
+            <div className="product-image-placeholder">
+                <span>Bild kommer snart</span>
+            </div>
+            )}
+
+                <h2>{product.name}</h2>
+
+                {product.description && <p>{product.description}</p>}
+
+                <p>{product.price} kr</p>
+              </article>
             ))}
-          </ul>
+          </div>
 
           <button
             onClick={() => searchProducts(page - 1)}

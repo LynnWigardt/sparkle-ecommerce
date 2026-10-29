@@ -80,14 +80,17 @@ export async function importSupplierProducts(
 }
 
 try {
-  await syncProductToAlgolia({
-    article_number: product.sku,
-    name: product.name,
-    price: product.price,
-    stock: product.stock,
-    ean: product.ean || null,
-    variants: product.variants,
-  })
+await syncProductToAlgolia({
+  article_number: product.sku,
+  name: product.name,
+  description: null,
+  category_id: null,
+  image_url: null,
+  price: product.price,
+  stock: product.stock,
+  ean: product.ean || null,
+  variants: product.variants,
+})
 } catch (error) {
   const reason =
     error instanceof Error ? error.message : 'Okänt fel'
