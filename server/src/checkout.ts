@@ -13,18 +13,20 @@ type CheckoutProduct = {
 const checkoutRouter = Router()
 
 checkoutRouter.post('/api/checkout', async (req, res) => {
+  let orderId: number | null = null
 
   try {
     const { items } = req.body
 
     if (!Array.isArray(items) || items.length === 0) {
-      res.status(400).json({
-        error: 'Kundvagnen är tom.',
-      })
+      res.status(400).json({ error: 'Kundvagnen är tom.' })
       return
     }
 
-    const validatedItems: { articleNumber: string; quantity: number }[] = []
+    const validatedItems: {
+      articleNumber: string
+      quantity: number
+    }[] = []
 
     for (const item of items) {
       if (
@@ -46,7 +48,7 @@ checkoutRouter.post('/api/checkout', async (req, res) => {
     }
 
     const articleNumbers = validatedItems.map(
-      (item) => item.articleNumber,
+      item => item.articleNumber
     )
 
     if (new Set(articleNumbers).size !== articleNumbers.length) {
@@ -55,18 +57,18 @@ checkoutRouter.post('/api/checkout', async (req, res) => {
       })
       return
     }
-    const { data, error } = await supabase
-    .from('products')
-    .select('article_number, name, price, stock')
-    .in('article_number', articleNumbers)
 
-    if (error) {
-    throw error
-    }
+    // Hämtar produkterna från Supabase
+    const { data, error } = await supabase
+      .from('products')
+      .select('article_number, name, price, stock')
+      .in('article_number', articleNumbers)
+
+    if (error) throw error
 
     const products: CheckoutProduct[] = data ?? []
 
-    if (!products || products.length !== validatedItems.length) {
+    if (products.length !== validatedItems.length) {
       res.status(400).json({
         error: 'En eller flera produkter kunde inte hittas.',
       })
@@ -75,13 +77,19 @@ checkoutRouter.post('/api/checkout', async (req, res) => {
 
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = []
 
+    const orderItems = []
+
+    let totalAmount = 0
+
     for (const item of validatedItems) {
       const product = products.find(
-        (product) => product.article_number === item.articleNumber,
+        product => product.article_number === item.articleNumber
       )
 
       if (!product) {
-        res.status(400).json({ error: 'Produkten hittades inte.' })
+        res.status(400).json({
+          error: 'Produkten hittades inte.',
+        })
         return
       }
 
@@ -90,7 +98,7 @@ checkoutRouter.post('/api/checkout', async (req, res) => {
         Number(product.price) <= 0
       ) {
         res.status(400).json({
-          error: `Produkten ${product.name} har ett ogiltigt pris.`,
+          error: `Ogiltigt pris för ${product.name}.`,
         })
         return
       }
@@ -102,31 +110,94 @@ checkoutRouter.post('/api/checkout', async (req, res) => {
         return
       }
 
+      const unitPrice = Math.round(Number(product.price) * 100)
+
+      totalAmount += unitPrice * item.quantity
+
       lineItems.push({
         price_data: {
           currency: 'sek',
           product_data: {
             name: product.name,
           },
-          unit_amount: Math.round(Number(product.price) * 100),
+          unit_amount: unitPrice,
         },
         quantity: item.quantity,
       })
+
+      orderItems.push({
+        article_number: product.article_number,
+        product_name: product.name,
+        quantity: item.quantity,
+        unit_price: unitPrice,
+      })
     }
 
+    // Skapar ordern i Supabase
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        total_amount: totalAmount,
+        currency: 'sek',
+        status: 'pending',
+      })
+      .select('id')
+      .single()
+
+    if (orderError) throw orderError
+
+    orderId = order.id
+
+    // Sparar produkterna i order_items
+    const { error: itemsError } = await supabase
+      .from('order_items')
+      .insert(
+        orderItems.map(item => ({
+          ...item,
+          order_id: order.id,
+        }))
+      )
+
+    if (itemsError) throw itemsError
+
+    // Skapar Stripe Checkout-sessionen
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: lineItems,
-      success_url: 'http://localhost:5173/checkout/success?session_id={CHECKOUT_SESSION_ID}',
-      cancel_url: 'http://localhost:5173/checkout/cancel',
+
+      success_url:
+        'http://localhost:5173/checkout/success?session_id={CHECKOUT_SESSION_ID}',
+
+      cancel_url:
+        'http://localhost:5173/checkout/cancel',
+
       metadata: {
-        items: JSON.stringify(validatedItems),
+        order_id: String(order.id),
       },
     })
 
+    // Sparar Stripe-sessionens ID på ordern
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({
+        stripe_session_id: session.id,
+      })
+      .eq('id', order.id)
+
+    if (updateError) throw updateError
+
     res.json({ url: session.url })
+
   } catch (error) {
     console.error('Stripe Checkout-fel:', error)
+
+    // Tar bort ordern om grejjer blir fel
+    if (orderId !== null) {
+      await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId)
+    }
 
     res.status(500).json({
       error: 'Kunde inte starta betalningen.',

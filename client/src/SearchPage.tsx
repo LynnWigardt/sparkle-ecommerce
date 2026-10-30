@@ -92,6 +92,39 @@ function SearchPage() {
     }
   }
 
+const addToCart = (product: Product) => {
+  const savedCart = localStorage.getItem('sparkle-cart')
+  const cart = savedCart ? JSON.parse(savedCart) : []
+
+  const existingProduct = cart.find(
+    (item: { articleNumber: string }) =>
+      item.articleNumber === product.objectID
+  )
+
+  let updatedCart
+
+  if (existingProduct) {
+    updatedCart = cart.map((item: { articleNumber: string; quantity: number }) =>
+      item.articleNumber === product.objectID
+        ? { ...item, quantity: item.quantity + 1 }
+        : item
+    )
+  } else {
+    updatedCart = [
+      ...cart,
+      {
+        articleNumber: product.objectID,
+        name: product.name,
+        price: product.price,
+        image_url: product.image_url ?? null,
+        quantity: 1,
+      },
+    ]
+  }
+
+  localStorage.setItem('sparkle-cart', JSON.stringify(updatedCart))
+}
+
   useEffect(() => {
     void loadCategories()
     void searchProducts()
@@ -105,8 +138,7 @@ function SearchPage() {
         onSubmit={(event) => {
           event.preventDefault()
           void searchProducts(1)
-        }}
-      >
+        }}>
         <label>
           Sök produkter
           <input
@@ -114,16 +146,14 @@ function SearchPage() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Sök efter en produkt..."
-            aria-label="Sök efter en produkt"
-          />
+            aria-label="Sök efter en produkt"/>
         </label>
 
         <label>
           Kategori
           <select
             value={categoryId}
-            onChange={(event) => setCategoryId(event.target.value)}
-          >
+            onChange={(event) => setCategoryId(event.target.value)}>
             <option value="">Alla kategorier</option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
@@ -140,8 +170,7 @@ function SearchPage() {
             min="0"
             step="0.01"
             value={minPrice}
-            onChange={(event) => setMinPrice(event.target.value)}
-          />
+            onChange={(event) => setMinPrice(event.target.value)}/>
         </label>
 
         <label>
@@ -151,16 +180,14 @@ function SearchPage() {
             min="0"
             step="0.01"
             value={maxPrice}
-            onChange={(event) => setMaxPrice(event.target.value)}
-          />
+            onChange={(event) => setMaxPrice(event.target.value)}/>
         </label>
 
         <label>
           Sortera efter
           <select
             value={sort}
-            onChange={(event) => setSort(event.target.value as SortOption)}
-          >
+            onChange={(event) => setSort(event.target.value as SortOption)}>
             <option value="relevance">Relevans</option>
             <option value="price_asc">Pris: lägst först</option>
             <option value="price_desc">Pris: högst först</option>
@@ -190,8 +217,7 @@ function SearchPage() {
                   <img
                     src={product.image_url}
                     alt={product.name}
-                    className="product-image"
-                  />
+                    className="product-image"/>
                 ) : (
                   <div className="product-image-placeholder">
                     <span>Bild kommer snart</span>
@@ -203,23 +229,26 @@ function SearchPage() {
                 {product.description && <p>{product.description}</p>}
 
                 <p>{product.price} kr</p>
+
+              <button onClick={() => addToCart(product)}>
+                Lägg i kundvagn
+              </button>
+
               </article>
             ))}
           </div>
 
-          <button
-            onClick={() => void searchProducts(page - 1)}
-            disabled={page <= 1 || loading}
-          >
+          <button onClick={() => void searchProducts(page - 1)}
+            disabled={page <= 1 || loading}>
             Föregående
           </button>
 
           <button
             onClick={() => void searchProducts(page + 1)}
-            disabled={page >= result.totalPages || loading}
-          >
+            disabled={page >= result.totalPages || loading}>
             Nästa
           </button>
+
         </div>
       )}
     </section>
