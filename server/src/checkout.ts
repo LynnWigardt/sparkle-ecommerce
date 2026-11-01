@@ -161,9 +161,11 @@ checkoutRouter.post('/api/checkout', async (req, res) => {
     if (itemsError) throw itemsError
 
     // Skapar Stripe Checkout-sessionen
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      line_items: lineItems,
+const session = await stripe.checkout.sessions.create({
+  mode: 'payment',
+  line_items: lineItems,
+
+  client_reference_id: String(order.id),
 
       success_url:
         'http://localhost:5173/checkout/success?session_id={CHECKOUT_SESSION_ID}',
@@ -175,6 +177,11 @@ checkoutRouter.post('/api/checkout', async (req, res) => {
         order_id: String(order.id),
       },
     })
+
+    
+    console.log('Skapad Checkout-session:', session.id);
+
+
 
     // Sparar Stripe-sessionens ID på ordern
     const { error: updateError } = await supabase

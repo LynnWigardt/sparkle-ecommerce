@@ -5,6 +5,7 @@ import { supabase } from './supabase.ts'
 import { getSupplierCatalog } from './integrations/supplierAdapter.ts'
 import { importSupplierProducts } from './integrations/productImport.ts'
 import checkoutRouter from './checkout.ts'
+import webhookRouter from './webhook.ts'
 import {
   importOldSparkleProducts,
   syncOldSparkleProductsToAlgolia,
@@ -18,6 +19,8 @@ import {
 } from './integrations/algoliaAdapter.ts'
 
 const app = express()
+
+app.use(webhookRouter)
 app.use(express.json())
 
 app.use(checkoutRouter)
