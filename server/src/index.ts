@@ -1,3 +1,4 @@
+import cors from 'cors'
 import express from 'express'
 import { z } from 'zod'
 import { getExchangeRate } from './integrations/currencyAdapter.ts'
@@ -20,9 +21,11 @@ import {
 
 const app = express()
 
+app.use(cors({
+  origin: 'http://localhost:5173',
+}))
 app.use(webhookRouter)
 app.use(express.json())
-
 app.use(checkoutRouter)
 
 const PORT = process.env.PORT ?? 3000

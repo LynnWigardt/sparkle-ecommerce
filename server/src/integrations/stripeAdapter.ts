@@ -6,6 +6,9 @@ if (!secretKey) {
   throw new Error('STRIPE_SECRET_KEY saknas i serverns .env')
 }
 
-const stripe = new Stripe(secretKey)
+const stripe = new Stripe(secretKey, {
+  timeout: 10_000,
+  maxNetworkRetries: 2,
+})
 
 export default stripe

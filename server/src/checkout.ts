@@ -178,7 +178,7 @@ const session = await stripe.checkout.sessions.create({
       },
     })
 
-    
+
     console.log('Skapad Checkout-session:', session.id);
 
 
@@ -206,8 +206,45 @@ const session = await stripe.checkout.sessions.create({
         .eq('id', orderId)
     }
 
+  res.status(502).json({
+    error: 'Betalningstjänsten är tillfälligt otillgänglig. Försök igen senare.',
+  })
+  }
+})
+
+// Hämtar orderstatus efter betalning
+checkoutRouter.get('/api/checkout/status', async (req, res) => {
+  try {
+    const sessionId = req.query.session_id
+
+    if (typeof sessionId !== 'string' || !sessionId) {
+      res.status(400).json({
+        error: 'Session-ID saknas.',
+      })
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('orders')
+      .select('status')
+      .eq('stripe_session_id', sessionId)
+      .single()
+
+    if (error || !data) {
+      res.status(404).json({
+        error: 'Ordern kunde inte hittas.',
+      })
+      return
+    }
+
+    res.json({
+      status: data.status,
+    })
+  } catch (error) {
+    console.error('Kunde inte hämta orderstatus:', error)
+
     res.status(500).json({
-      error: 'Kunde inte starta betalningen.',
+      error: 'Kunde inte hämta orderstatus.',
     })
   }
 })
