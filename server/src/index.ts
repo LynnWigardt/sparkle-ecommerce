@@ -8,6 +8,7 @@ import { importSupplierProducts } from './integrations/productImport.ts'
 import checkoutRouter from './checkout.ts'
 import webhookRouter from './webhook.ts'
 import multer from 'multer'
+import shippingRouter from './routes/shipping.ts'
 import {
   importOldSparkleProducts,
   syncOldSparkleProductsToAlgolia,
@@ -62,6 +63,7 @@ app.use(cors({
 app.use(webhookRouter)
 app.use(express.json())
 app.use(checkoutRouter)
+app.use(shippingRouter)
 
 const PORT = process.env.PORT ?? 3000
 
