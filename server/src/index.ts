@@ -392,7 +392,7 @@ console.log('Bilden uppladdad:', uploadedImage.path)
         throw new Error('Bilden sparades, men kunde inte hämta produkten för Algolia.')
       }
 
-      // Uppdaterar produkten i Algolia med den NYA bildadressen.
+      // Uppdaterar produkten i Algolia med den NYA bildadressen. Tar nån minut innan den syns på Sparkle!
       await syncProductToAlgolia({
         ...updatedProduct,
         price: Number(updatedProduct.price),
