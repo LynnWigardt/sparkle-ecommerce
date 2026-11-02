@@ -183,3 +183,22 @@ h1 {
     letter-spacing: 5px;
     font-size: 14px;
 }
+
+nav {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding: 18px 30px;
+  background-color: #222;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+nav a:hover {
+  color: #d4a5c5;
+}

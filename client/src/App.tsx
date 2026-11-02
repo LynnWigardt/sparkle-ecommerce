@@ -4,10 +4,12 @@ import SearchPage from './SearchPage'
 import CartPage from './CartPage.tsx'
 import CheckoutPage from './CheckoutPage.tsx'
 import CheckoutSuccessPage from './CheckoutSuccessPage'
+import Navbar from './Navbar'
 
 function App() {
   return (
     <BrowserRouter>
+      <Navbar />
       <Routes>
         <Route path="/" element={<SearchPage />} />
         <Route path="/admin" element={<AdminPage />} />
