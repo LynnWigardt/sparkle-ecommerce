@@ -28,6 +28,7 @@ function AdminPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [loadingProducts, setLoadingProducts] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
 
   async function handleImport() {
     setMessage('Importerar produkter...')
@@ -94,7 +95,7 @@ function AdminPage() {
     )
   }
 
-  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSave(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
 
     if (!selectedProduct) return
@@ -127,8 +128,14 @@ function AdminPage() {
         throw new Error(data.error || data.message || 'Kunde inte spara produkten.')
       }
 
+      // Laddar upp en ny produktbild om en bild har valts.
+      if (selectedImage) {
+        await handleImageUpload(selectedProduct.article_number)
+      }
+
       setMessage(data.message || 'Produkten har sparats.')
       setSelectedProduct(null)
+      setSelectedImage(null)
       await loadProducts()
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Något gick fel.')
@@ -167,7 +174,33 @@ function AdminPage() {
     }
   }
 
+  // Laddar upp produktbilden till servern.
+    async function handleImageUpload(productId: string) {
+      if (!selectedImage) return
+
+      const formData = new FormData()
+      formData.append('image', selectedImage)
+
+      const response = await fetch(
+        `http://localhost:3000/api/admin/products/${productId}/image`,
+        {
+          method: 'POST',
+          body: formData,
+        },
+      )
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Kunde inte ladda upp bilden.')
+      }
+
+      return result
+    }
+
   return (
+
+
     <main>
       <h1>Sparkle Admin</h1>
 
@@ -301,6 +334,17 @@ function AdminPage() {
                 value={selectedProduct.image_url ?? ''}
                 onChange={(event) =>
                   updateField('image_url', event.target.value || null)
+                }
+              />
+            </label>
+
+            <label>
+              Välj produktbild
+              <input
+                type="file"
+                accept="image/jpeg, image/png"
+                onChange={(event) =>
+                  setSelectedImage(event.target.files?.[0] ?? null)
                 }
               />
             </label>

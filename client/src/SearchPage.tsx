@@ -211,32 +211,42 @@ const addToCart = (product: Product) => {
           </p>
 
           <div className="product-grid">
-            {result.products.map((product) => (
-              <article className="product-card" key={product.objectID}>
-                {product.image_url ? (
-                  <img
-                    src={product.image_url}
-                    alt={product.name}
-                    className="product-image"/>
-                ) : (
-                  <div className="product-image-placeholder">
-                    <span>Bild kommer snart</span>
-                  </div>
-                )}
+  {result.products.map((product) => {
+    console.log('Produktbild:', product.name, product.image_url)
 
-                <h2>{product.name}</h2>
-
-                {product.description && <p>{product.description}</p>}
-
-                <p>{product.price} kr</p>
-
-              <button onClick={() => addToCart(product)}>
-                Lägg i kundvagn
-              </button>
-
-              </article>
-            ))}
+    return (
+      <article className="product-card" key={product.objectID}>
+        {product.image_url ? (
+          <img
+  src={product.image_url}
+  alt={product.name}
+  className="product-image"
+  onError={(event) => {
+    console.error('Bilden kunde inte laddas:', event.currentTarget.src)
+  }}
+  onLoad={() => {
+    console.log('Bilden laddades:', product.name)
+  }}
+/>
+        ) : (
+          <div className="product-image-placeholder">
+            <span>Bild kommer snart</span>
           </div>
+        )}
+
+        <h2>{product.name}</h2>
+
+        {product.description && <p>{product.description}</p>}
+
+        <p>{product.price} kr</p>
+
+        <button onClick={() => addToCart(product)}>
+          Lägg i kundvagn
+        </button>
+      </article>
+    )
+  })}
+</div>
 
           <button onClick={() => void searchProducts(page - 1)}
             disabled={page <= 1 || loading}>

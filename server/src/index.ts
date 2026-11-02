@@ -7,6 +7,7 @@ import { getSupplierCatalog } from './integrations/supplierAdapter.ts'
 import { importSupplierProducts } from './integrations/productImport.ts'
 import checkoutRouter from './checkout.ts'
 import webhookRouter from './webhook.ts'
+import multer from 'multer'
 import {
   importOldSparkleProducts,
   syncOldSparkleProductsToAlgolia,
@@ -18,6 +19,40 @@ import {
   syncProductToAlgolia,
   configureSortIndexes,
 } from './integrations/algoliaAdapter.ts'
+import {
+  uploadProductImage,
+  deleteProductImage,
+} from './integrations/storageAdapter.ts'
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+})
+
+// Validerar att bilden är JPEG eller PNG genom kontroll av MIME(nummer i filen)
+function isValidImage(file: Express.Multer.File) {
+  const isJpeg =
+    file.buffer[0] === 0xff &&
+    file.buffer[1] === 0xd8 &&
+    file.buffer[2] === 0xff
+
+  const isPng =
+    file.buffer[0] === 0x89 &&
+    file.buffer[1] === 0x50 &&
+    file.buffer[2] === 0x4e &&
+    file.buffer[3] === 0x47 &&
+    file.buffer[4] === 0x0d &&
+    file.buffer[5] === 0x0a &&
+    file.buffer[6] === 0x1a &&
+    file.buffer[7] === 0x0a
+
+  return (
+    (file.mimetype === 'image/jpeg' && isJpeg) ||
+    (file.mimetype === 'image/png' && isPng)
+  )
+}
 
 const app = express()
 
@@ -203,13 +238,25 @@ app.put('/api/products/:articleNumber', async (req, res) => {
 
   const product = validation.data
 
+  // Hämtar produktens AKTUELLA bildadress från databasen.
+  const { data: currentImage, error: imageError } = await supabase
+    .from('products')
+    .select('image_url')
+    .eq('article_number', articleNumber)
+    .single()
+
+  if (imageError) {
+    res.status(500).json({ error: 'Kunde inte hämta produktens bildadress.' })
+    return
+  }
+
   const { data, error } = await supabase
     .from('products')
     .update({
       name: product.name,
       description: product.description || null,
       category_id: product.category_id,
-      image_url: product.image_url || null,
+      image_url: currentImage.image_url,
       price: product.price,
       stock: product.stock,
       ean: product.ean || null,
@@ -239,7 +286,7 @@ app.put('/api/products/:articleNumber', async (req, res) => {
       name: data.name,
       description: data.description,
       category_id: data.category_id,
-      image_url: data.image_url,
+      image_url: currentImage.image_url,
       price: Number(data.price),
       stock: data.stock,
       ean: data.ean,
@@ -276,6 +323,101 @@ app.get('/api/test-supabase', async (_req, res) => {
 
   res.json({ success: true, categories: data })
 })
+
+// Tar emot en produktbild, kontrollerar filtypen och laddar upp bilden till Supabase Storage.
+app.post(
+  '/api/admin/products/:id/image',
+  upload.single('image'),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: 'Ingen bild har valts.' })
+        return
+      }
+
+      if (!isValidImage(req.file)) {
+        res.status(400).json({
+          error: 'Endast JPEG- och PNG-bilder är tillåtna.',
+        })
+        return
+      }
+
+      const productId = req.params.id
+
+    // Hämtar produktens nuvarande bildinformation från databasen.
+      const { data: product, error: productError } = await supabase
+        .from('products')
+        .select('image_path, image_url')
+        .eq('article_number', productId)
+        .single()
+
+      if (productError || !product) {
+        res.status(404).json({ error: 'Produkten kunde inte hittas.' })
+        return
+      }
+
+      console.log('Försöker ladda upp bild för produkt:', productId)
+
+const uploadedImage = await uploadProductImage(
+  req.file.buffer,
+  req.file.mimetype,
+)
+
+console.log('Bilden uppladdad:', uploadedImage.path)
+
+      // Sparar den nya bildens sökväg och publika URL på produkten.
+      const { error: updateError } = await supabase
+        .from('products')
+        .update({
+          image_path: uploadedImage.path,
+          image_url: uploadedImage.url,
+        })
+        .eq('article_number', productId)
+
+
+      if (updateError) {
+        await deleteProductImage(uploadedImage.path)
+
+        throw new Error(`Kunde inte spara bilden på produkten: ${updateError.message}`)
+      }
+
+      // Hämtar den uppdaterade produkten från databasen.
+      const { data: updatedProduct, error: fetchError } = await supabase
+        .from('products')
+        .select('article_number, name, description, category_id, image_url, price, stock, ean, variants')
+        .eq('article_number', productId)
+        .single()
+
+      if (fetchError || !updatedProduct) {
+        throw new Error('Bilden sparades, men kunde inte hämta produkten för Algolia.')
+      }
+
+      // Uppdaterar produkten i Algolia med den NYA bildadressen.
+      await syncProductToAlgolia({
+        ...updatedProduct,
+        price: Number(updatedProduct.price),
+        variants: updatedProduct.variants ?? [],
+      })
+
+      // Tar bort produktens gamla bild när den NYA har sparats.
+      if (product.image_path) {
+        await deleteProductImage(product.image_path)
+      }
+
+      res.json({
+        success: true,
+        productId,
+        imagePath: uploadedImage.path,
+        imageUrl: uploadedImage.url,
+      })
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Ett okänt fel inträffade'
+
+      res.status(500).json({ success: false, error: message })
+    }
+  },
+)
 
 app.post('/api/test-supabase', async (_req, res) => {
   const { data, error } = await supabase
