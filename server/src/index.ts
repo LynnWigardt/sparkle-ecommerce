@@ -537,4 +537,18 @@ async function startServer() {
   }
 }
 
+// Hanterar fel från Multer som t.ex. stora bilder eller andra filtyper.
+app.use((error: any, req: any, res: any, next: any) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      res.status(400).json({
+        error: 'Bilden är för stor. Maximal filstorlek är 5 MB.',
+      })
+      return
+    }
+  }
+
+  next(error)
+})
+
 startServer()
