@@ -8,8 +8,17 @@ if (!appId || !adminApiKey || !searchApiKey) {
   throw new Error('Algolia-miljövariabler saknas i serverns .env')
 }
 
-const adminClient = algoliasearch(appId, adminApiKey)
-const searchClient = algoliasearch(appId, searchApiKey)
+// 2 sek ansluta, 5 sek läsa svar, 10 sek skicka ändrignar.
+const algoliaOptions = {
+  timeouts: {
+    connect: 2000,
+    read: 5000,
+    write: 10000,
+  },
+}
+
+const adminClient = algoliasearch(appId, adminApiKey, algoliaOptions)
+const searchClient = algoliasearch(appId, searchApiKey, algoliaOptions)
 
 const indexName = 'sparkle_products'
 

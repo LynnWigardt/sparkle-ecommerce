@@ -181,9 +181,7 @@ function AdminPage() {
       const formData = new FormData()
       formData.append('image', selectedImage)
 
-      const response = await fetch(
-        `http://localhost:3000/api/admin/products/${productId}/image`,
-        {
+      const response = await fetch(`/api/admin/products/${productId}/image`, {
           method: 'POST',
           body: formData,
         },

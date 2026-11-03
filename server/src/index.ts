@@ -57,9 +57,11 @@ function isValidImage(file: Express.Multer.File) {
 
 const app = express()
 
-app.use(cors({
-  origin: 'http://localhost:5173',
-}))
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  }),
+)
 app.use(webhookRouter)
 app.use(express.json())
 app.use(checkoutRouter)
@@ -528,15 +530,17 @@ app.post('/api/sync-old-sparkle-to-algolia', async (_req, res) => {
 async function startServer() {
   try {
     await configureSortIndexes()
-
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`)
-      console.log('Algolia sorteringsindex är konfigurerade.')
-    })
+    console.log('Algolia sorteringsindex är konfigurerade.')
   } catch (error) {
-    console.error('Kunde inte konfigurera Algolias sorteringsindex:', error)
-    process.exit(1)
+    console.error(
+      'Kunde inte konfigurera Algolias sorteringsindex. Servern startar ändå:',
+      error,
+    )
   }
+
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`)
+  })
 }
 
 // Hanterar fel från Multer som t.ex. stora bilder eller andra filtyper.
