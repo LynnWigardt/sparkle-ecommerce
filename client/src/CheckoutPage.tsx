@@ -16,6 +16,7 @@ function CheckoutPage() {
   const [deliveryTime, setDeliveryTime] = useState('')
   const [deliveryTimeLoading, setDeliveryTimeLoading] = useState(false)
   const [deliveryTimeError, setDeliveryTimeError] = useState('')
+  const [shippingPrice, setShippingPrice] = useState<number | null>(null)
 
   async function handleFindServicePoints() {
     setError('')
@@ -47,6 +48,43 @@ function CheckoutPage() {
       setError('Det gick inte att hämta PostNord-ombud just nu.')
     }
   }
+
+  async function handleCalculateShipping(method: string) {
+  setShippingPrice(null)
+  setError('')
+
+  try {
+    const cart = JSON.parse(localStorage.getItem('sparkle-cart') || '[]')
+
+    const items = cart.map((item: {
+      articleNumber: string
+      quantity: number
+    }) => ({
+      articleNumber: item.articleNumber,
+      quantity: item.quantity,
+    }))
+
+    const response = await fetch('/api/checkout/shipping-price', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ items, shippingMethod: method }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Kunde inte beräkna frakten.')
+    }
+
+    setShippingPrice(data.shippingPrice)
+  } catch (err) {
+    setError(
+      err instanceof Error ? err.message : 'Kunde inte beräkna frakten.'
+    )
+  }
+}
 
   async function handleSelectServicePoint(id: string) {
     setServicePointId(id)
@@ -157,7 +195,11 @@ function CheckoutPage() {
           name="shippingMethod"
           value="service_point"
           checked={shippingMethod === 'service_point'}
-          onChange={() => setShippingMethod('service_point')}
+         onChange={() => {
+          setShippingMethod('service_point')
+          setServicePointId('')
+          handleCalculateShipping('service_point')
+        }}
         />
         PostNord-ombud
       </label>
@@ -168,10 +210,22 @@ function CheckoutPage() {
           name="shippingMethod"
           value="home_delivery"
           checked={shippingMethod === 'home_delivery'}
-          onChange={() => setShippingMethod('home_delivery')}
+          onChange={() => {
+            setShippingMethod('home_delivery')
+            setServicePointId('')
+            handleCalculateShipping('home_delivery')
+          }}
         />
         Hemleverans
       </label>
+
+        {shippingPrice !== null && (
+          <p>
+            <strong>
+              Fraktkostnad: {shippingPrice === 0 ? 'Fri frakt' : `${shippingPrice} kr`}
+            </strong>
+          </p>
+        )}
 
       <div>
         <label htmlFor="postalCode">Postnummer</label>

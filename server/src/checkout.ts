@@ -23,6 +23,63 @@ function calculateShippingPrice(orderTotal: number, shippingMethod: string) {
 
 const checkoutRouter = Router()
 
+checkoutRouter.post('/api/checkout/shipping-price', async (req, res) => {
+  try {
+    const { items, shippingMethod } = req.body
+
+    if (!Array.isArray(items) || items.length === 0) {
+      res.status(400).json({ error: 'Kundvagnen är tom.' })
+      return
+    }
+
+    if (!['service_point', 'home_delivery'].includes(shippingMethod)) {
+      res.status(400).json({ error: 'Ogiltigt leveranssätt.' })
+      return
+    }
+
+    let totalAmount = 0
+
+    for (const item of items) {
+      if (
+        typeof item.articleNumber !== 'string' ||
+        !Number.isInteger(item.quantity) ||
+        item.quantity < 1 ||
+        item.quantity > 99
+      ) {
+        res.status(400).json({ error: 'Ogiltiga produkter eller antal.' })
+        return
+      }
+
+      const { data: product, error } = await supabase
+        .from('products')
+        .select('article_number, price')
+        .eq('article_number', item.articleNumber)
+        .maybeSingle()
+
+      if (error) throw error
+
+      if (!product || !Number.isFinite(Number(product.price))) {
+        res.status(400).json({ error: 'En produkt kunde inte hittas.' })
+        return
+      }
+
+      totalAmount += Math.round(Number(product.price) * 100) * item.quantity
+    }
+
+    const shippingPrice = calculateShippingPrice(totalAmount, shippingMethod)
+
+    res.json({
+      shippingPrice: shippingPrice / 100,
+    })
+  } catch (error) {
+    console.error('Kunde inte beräkna fraktpris:', error)
+
+    res.status(500).json({
+      error: 'Kunde inte beräkna fraktpriset just nu.',
+    })
+  }
+})
+
 checkoutRouter.post('/api/checkout', async (req, res) => {
   let orderId: number | null = null
 
