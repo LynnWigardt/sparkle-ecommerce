@@ -2,6 +2,7 @@ import Stripe from 'stripe'
 import { Router } from 'express'
 import stripe from './integrations/stripeAdapter.ts'
 import { supabase } from './supabase.ts'
+import { findServicePoints } from './integrations/shippingAdapter.ts'
 
 type CheckoutProduct = {
   article_number: string
@@ -10,18 +11,68 @@ type CheckoutProduct = {
   stock: number
 }
 
+// Funktionen räknar i ören
+function calculateShippingPrice(orderTotal: number, shippingMethod: string) {
+  if (orderTotal >= 50000) return 0
+
+  if (shippingMethod === 'service_point') return 5900
+  if (shippingMethod === 'home_delivery') return 9900
+
+  throw new Error('Ogiltigt leveranssätt.')
+}
+
 const checkoutRouter = Router()
 
 checkoutRouter.post('/api/checkout', async (req, res) => {
   let orderId: number | null = null
 
   try {
-    const { items } = req.body
+    const { items, shippingMethod, postalCode, servicePointId } = req.body
 
     if (!Array.isArray(items) || items.length === 0) {
       res.status(400).json({ error: 'Kundvagnen är tom.' })
       return
     }
+
+    if (!['service_point', 'home_delivery'].includes(shippingMethod)) {
+  res.status(400).json({ error: 'Välj ett giltigt leveranssätt.' })
+  return
+}
+
+const normalizedPostalCode = String(postalCode ?? '').replace(/\s/g, '')
+
+//Om postnumret INTE består av fem siffror skickas felmeddelande och avbryts
+if (!/^\d{5}$/.test(normalizedPostalCode)) {
+  res.status(400).json({ error: 'Ange ett giltigt postnummer.' })
+  return
+}
+
+let selectedServicePoint = null
+
+if (shippingMethod === 'service_point') {
+  if (typeof servicePointId !== 'string' || !servicePointId) {
+    res.status(400).json({ error: 'Välj ett utlämningsställe.' })
+    return
+  }
+
+  try {
+    const servicePoints = await findServicePoints(normalizedPostalCode)
+
+    selectedServicePoint = servicePoints.find(
+      point => point.id === servicePointId
+    )
+
+    if (!selectedServicePoint) {
+      res.status(400).json({ error: 'Det valda utlämningsstället är inte giltigt.' })
+      return
+    }
+  } catch {
+    res.status(502).json({
+      error: 'Kunde inte kontrollera utlämningsstället hos PostNord. Försök igen.',
+    })
+    return
+  }
+}
 
     const validatedItems: {
       articleNumber: string
@@ -133,6 +184,24 @@ checkoutRouter.post('/api/checkout', async (req, res) => {
       })
     }
 
+    const shippingPrice = calculateShippingPrice(totalAmount, shippingMethod)
+    totalAmount += shippingPrice
+
+    if (shippingPrice > 0) {
+    lineItems.push({
+      price_data: {
+        currency: 'sek',
+        product_data: {
+          name: shippingMethod === 'service_point'
+            ? 'Frakt till PostNord-ombud'
+            : 'Hemleverans',
+        },
+        unit_amount: shippingPrice,
+      },
+      quantity: 1,
+    })
+  }
+
     // Skapar ordern i Supabase
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -140,6 +209,10 @@ checkoutRouter.post('/api/checkout', async (req, res) => {
         total_amount: totalAmount,
         currency: 'sek',
         status: 'pending',
+        shipping_method: shippingMethod,
+        shipping_price: shippingPrice,
+        service_point_id: selectedServicePoint?.id ?? null,
+        service_point_name: selectedServicePoint?.name ?? null,
       })
       .select('id')
       .single()
@@ -208,7 +281,7 @@ const session = await stripe.checkout.sessions.create({
     }
 
   res.status(502).json({
-    error: 'Betalningstjänsten är tillfälligt otillgänglig. Försök igen senare.',
+    error: 'Betalningstjänsten är för tillfället otillgänglig. Försök igen senare.',
   })
   }
 })
