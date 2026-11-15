@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-"scripts": {
-  "test": "echo \"Error: no test specified\" && exit 1",
-  "dev": "node --watch-path=./src --env-file=.env src/index.ts",
-  "start": "node src/index.ts"
-},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node --watch-path=./src --env-file=.env src/index.ts",
+    "start": "node src/index.ts"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -21,6 +21,7 @@
     "fast-xml-parser": "^5.11.2",
     "fast-xml-validator": "^1.4.2",
     "multer": "^2.5.0",
+    "openid-client": "^6.9.0",
     "stripe": "^23.0.1",
     "zod": "^4.6.7"
   },

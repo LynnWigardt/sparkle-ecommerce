@@ -9,6 +9,7 @@ import checkoutRouter from './checkout.ts'
 import webhookRouter from './webhook.ts'
 import multer from 'multer'
 import shippingRouter from './routes/shipping.ts'
+import googleAuthRouter from './auth/googleAuth.ts'
 import {
   importOldSparkleProducts,
   syncOldSparkleProductsToAlgolia,
@@ -66,7 +67,7 @@ app.use(webhookRouter)
 app.use(express.json())
 app.use(checkoutRouter)
 app.use(shippingRouter)
-
+app.use(googleAuthRouter)
 const PORT = process.env.PORT ?? 3000
 
 const productSchema = z.object({
