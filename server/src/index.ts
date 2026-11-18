@@ -67,7 +67,7 @@ app.use(webhookRouter)
 app.use(express.json())
 app.use(checkoutRouter)
 app.use(shippingRouter)
-app.use(googleAuthRouter)
+app.use('/api/auth', googleAuthRouter)
 const PORT = process.env.PORT ?? 3000
 
 const productSchema = z.object({
