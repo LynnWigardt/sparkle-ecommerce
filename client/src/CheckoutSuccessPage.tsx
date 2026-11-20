@@ -17,7 +17,7 @@ function CheckoutSuccessPage() {
     const fetchStatus = async () => {
       try {
         const response = await fetch(
-          `http://localhost:3000/api/checkout/status?session_id=${encodeURIComponent(sessionId)}`
+          `/api/checkout/status?session_id=${encodeURIComponent(sessionId)}`
         )
 
         const data = await response.json()
