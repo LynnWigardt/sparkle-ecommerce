@@ -262,4 +262,67 @@ router.get('/google/callback', async (req, res) => {
     }
     })
 
+
+    // Hämtar endast ordrar för den inloggade kunden.
+    router.get('/orders', async (req, res) => {
+    try {
+        const token = getCookie(req.headers.cookie, 'sparkle_session')
+
+        if (!token) {
+        res.status(401).json({ error: 'Du måste vara inloggad.' })
+        return
+        }
+
+        const payload = await verifySessionToken(token)
+        const customerId = Number(payload.sub)
+
+        if (!Number.isSafeInteger(customerId) || customerId <= 0) {
+        res.status(401).json({ error: 'Ogiltig inloggning.' })
+        return
+        }
+
+        // Hämtar kundens egna ordrar från databasen.
+        const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select('id, total_amount, currency, status, created_at, shipping_method, shipping_price')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false })
+
+        if (ordersError) {
+        throw ordersError
+        }
+
+        if (!orders || orders.length === 0) {
+        res.json({ orders: [] })
+        return
+        }
+
+        // Hämtar orderraderna som hör till kundens ordrar.
+        const orderIds = orders.map((order) => order.id)
+
+        const { data: orderItems, error: itemsError } = await supabase
+        .from('order_items')
+        .select('id, order_id, article_number, product_name, quantity, unit_price')
+        .in('order_id', orderIds)
+
+        if (itemsError) {
+        throw itemsError
+        }
+
+        // Kopplar varje order till dess produkter.
+        const ordersWithItems = orders.map((order) => ({
+        ...order,
+        items: (orderItems || []).filter(
+            (item) => item.order_id === order.id
+        ),
+        }))
+
+        res.json({ orders: ordersWithItems })
+    } catch (error) {
+        console.error('Fel vid hämtning av kundens ordrar:', error)
+        res.status(500).json({ error: 'Kunde inte hämta orderhistoriken.' })
+    }
+    })
+
+
 export default router

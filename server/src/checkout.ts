@@ -3,6 +3,7 @@ import { Router } from 'express'
 import stripe from './integrations/stripeAdapter.ts'
 import { supabase } from './supabase.ts'
 import { findServicePoints } from './integrations/shippingAdapter.ts'
+import { jwtVerify } from 'jose'
 
 type CheckoutProduct = {
   article_number: string
@@ -22,6 +23,43 @@ function calculateShippingPrice(orderTotal: number, shippingMethod: string) {
 }
 
 const checkoutRouter = Router()
+
+// Hämtar en cookie från requesten
+function getCookie(req: import('express').Request, name: string) {
+  const cookies = req.headers.cookie?.split(';') ?? []
+
+  const cookie = cookies.find(item => item.trim().startsWith(`${name}=`))
+
+  return cookie?.trim().substring(name.length + 1)
+}
+
+// Hämtar kundens ID från den verifierade inloggningscookien
+async function getLoggedInCustomerId(
+  req: import('express').Request
+): Promise<number | null> {
+  const token = getCookie(req, 'sparkle_session')
+
+  // Ingen inloggning = kund handlar som gäst
+  if (!token) return null
+
+  const secret = process.env.JWT_SECRET
+
+  if (!secret) throw new Error('JWT_SECRET saknas.')
+
+  const { payload } = await jwtVerify(
+    token,
+    new TextEncoder().encode(secret),
+    { algorithms: ['HS256'] }
+  )
+
+  const customerId = Number(payload.sub)
+
+  if (!Number.isSafeInteger(customerId) || customerId <= 0) {
+    throw new Error('Ogiltig kundinloggning.')
+  }
+
+  return customerId
+}
 
 checkoutRouter.post('/api/checkout/shipping-price', async (req, res) => {
   try {
@@ -260,9 +298,11 @@ if (shippingMethod === 'service_point') {
   }
 
     // Skapar ordern i Supabase
+    const customerId = await getLoggedInCustomerId(req)
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
+        customer_id: customerId,
         total_amount: totalAmount,
         currency: 'sek',
         status: 'pending',
@@ -290,19 +330,20 @@ if (shippingMethod === 'service_point') {
 
     if (itemsError) throw itemsError
 
+  
     // Skapar Stripe Checkout-sessionen
-const session = await stripe.checkout.sessions.create({
-  mode: 'payment',
-  expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
-  line_items: lineItems,
+    const clientUrl = (
+      process.env.CLIENT_URL || 'http://localhost:5173'
+    ).replace(/\/$/, '')
 
-  client_reference_id: String(order.id),
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
+      line_items: lineItems,
+      client_reference_id: String(order.id),
 
-      success_url:
-        'http://localhost:5173/checkout/success?session_id={CHECKOUT_SESSION_ID}',
-
-      cancel_url:
-        'http://localhost:5173/checkout/cancel',
+      success_url: `${clientUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${clientUrl}/checkout/cancel`,
 
       metadata: {
         order_id: String(order.id),
