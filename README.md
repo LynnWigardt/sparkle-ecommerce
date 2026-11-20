@@ -123,6 +123,14 @@ En risk med externa tjänster är ju att ändrar de i sina tjänster så ändras
 
 ## Labb 5 – PostNord AI-dokumentation
 
+- Tillägg 2026.11.20
+Vad som skiljde sig från Postnords dokumentation och hur jag löste det.
+
+Ett problem jag hade var när jag skulle hämta beräknad leveranstid. I Postnords dokumentation finns det olika typer av anrop på adress. Bland annat locationtoaddress och addresstoaddress. Jag valde först fel anrop och det blev helt fel. Men med hjälp av chatgpt som förklarade att locationtoaddress utgår ifrån en Postnord-adress (som en depå) och addresstoaddress utgår ifrån en avsändareadress och mottagaradress. Och för Sparkle behövde jag använda addresstoaddress. 
+Sen testade jag igen med rätt anrop och då funkade det som det skulle och jag kunde se leveranstiden och rätt plats.
+
+
+
 Jag har använt ChatGPT i webbläsaren som hjälp under arbetet med PostNord-integrationen men kollar även av med chatgpt under arbetets gång. Jag har klistrat in relevanta delar av min kod och fått hjälp med att förstå API-anrop, strukturera lösningen och felsöka. 
 
 Prompter jag använde: 

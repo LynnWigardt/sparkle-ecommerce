@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 
 type Product = {
-  objectID: string
+  article_number: string
   name: string
   price: number
   description?: string | null
   image_url?: string | null
   category_id?: number | null
+  stock?: number
+  ean?: string | null
+  variants?: unknown[]
 }
 
 type Category = {
@@ -98,14 +101,14 @@ const addToCart = (product: Product) => {
 
   const existingProduct = cart.find(
     (item: { articleNumber: string }) =>
-      item.articleNumber === product.objectID
+      item.articleNumber === product.article_number
   )
 
   let updatedCart
 
   if (existingProduct) {
     updatedCart = cart.map((item: { articleNumber: string; quantity: number }) =>
-      item.articleNumber === product.objectID
+      item.articleNumber === product.article_number
         ? { ...item, quantity: item.quantity + 1 }
         : item
     )
@@ -113,7 +116,7 @@ const addToCart = (product: Product) => {
     updatedCart = [
       ...cart,
       {
-        articleNumber: product.objectID,
+        articleNumber: product.article_number,
         name: product.name,
         price: product.price,
         image_url: product.image_url ?? null,
@@ -215,7 +218,7 @@ const addToCart = (product: Product) => {
     console.log('Produktbild:', product.name, product.image_url)
 
     return (
-      <article className="product-card" key={product.objectID}>
+      <article className="product-card" key={product.article_number}>
         {product.image_url ? (
           <img
   src={product.image_url}

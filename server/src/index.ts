@@ -116,6 +116,18 @@ const searchSchema = z.object({
   },
 )
 
+type AlgoliaProduct = {
+  objectID: string
+  name: string
+  description?: string | null
+  category_id?: number | null
+  image_url?: string | null
+  price: number
+  stock?: number
+  ean?: string | null
+  variants?: unknown[]
+}
+
 app.get('/api/search', async (req, res) => {
   const validation = searchSchema.safeParse(req.query)
 
@@ -167,9 +179,20 @@ app.get('/api/search', async (req, res) => {
       },
     })
 
+     // Anpassar Algolias sökresultat till butikens egna produktformat.
     res.json({
       query: q,
-      products: result.hits,
+      products: (result.hits as unknown as AlgoliaProduct[]).map((hit) => ({
+        article_number: String(hit.objectID),
+        name: hit.name,
+        description: hit.description ?? null,
+        category_id: hit.category_id ?? null,
+        image_url: hit.image_url ?? null,
+        price: Number(hit.price),
+        stock: Number(hit.stock ?? 0),
+        ean: hit.ean ?? null,
+        variants: hit.variants ?? [],
+      })),
       totalHits: result.nbHits,
       totalPages: result.nbPages,
       page,
@@ -317,18 +340,6 @@ app.put('/api/products/:articleNumber', async (req, res) => {
   }
 })
 
-// Testa Supabase
-app.get('/api/test-supabase', async (_req, res) => {
-  const { data, error } = await supabase.from('categories').select('*')
-
-  if (error) {
-    res.status(500).json({ error: error.message })
-    return
-  }
-
-  res.json({ success: true, categories: data })
-})
-
 // Tar emot en produktbild, kontrollerar filtypen och laddar upp bilden till Supabase Storage.
 app.post(
   '/api/admin/products/:id/image',
@@ -439,17 +450,6 @@ app.post('/api/test-supabase', async (_req, res) => {
   res.json({ success: true, category: data })
 })
 
-// Testa leverantörsdata
-app.get('/api/test-supplier', async (_req, res) => {
-  try {
-    const products = await getSupplierCatalog()
-    res.json({ success: true, count: products.length, products })
-  } catch (error) {
-    console.error('Supplier test failed:', error)
-    res.status(500).json({ error: 'Could not fetch supplier products' })
-  }
-})
-
 // Importera produkter från leverantören
 app.post('/api/import-products', async (req, res) => {
   const format = req.query.format === 'xml' ? 'xml' : 'csv'
@@ -501,18 +501,6 @@ app.delete('/api/products/:articleNumber', async (req, res) => {
       message:
         'Produkten togs bort från databasen, men sökindexet kunde inte uppdateras.',
     })
-  }
-})
-
-// Importera gamla Sparkle-produkter
-app.post('/api/import-old-sparkle-products', async (_req, res) => {
-  try {
-    const result = await importOldSparkleProducts()
-    res.json({ success: true, ...result })
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Ett okänt fel inträffade'
-    res.status(500).json({ success: false, error: message })
   }
 })
 
