@@ -123,13 +123,15 @@ En risk med externa tjänster är ju att ändrar de i sina tjänster så ändras
 
 ## Labb 5 – PostNord AI-dokumentation
 
+---------------------
+
 - Tillägg 2026.11.20
 Vad som skiljde sig från Postnords dokumentation och hur jag löste det.
 
 Ett problem jag hade var när jag skulle hämta beräknad leveranstid. I Postnords dokumentation finns det olika typer av anrop på adress. Bland annat locationtoaddress och addresstoaddress. Jag valde först fel anrop och det blev helt fel. Men med hjälp av chatgpt som förklarade att locationtoaddress utgår ifrån en Postnord-adress (som en depå) och addresstoaddress utgår ifrån en avsändareadress och mottagaradress. Och för Sparkle behövde jag använda addresstoaddress. 
 Sen testade jag igen med rätt anrop och då funkade det som det skulle och jag kunde se leveranstiden och rätt plats.
 
-
+----------------------
 
 Jag har använt ChatGPT i webbläsaren som hjälp under arbetet med PostNord-integrationen men kollar även av med chatgpt under arbetets gång. Jag har klistrat in relevanta delar av min kod och fått hjälp med att förstå API-anrop, strukturera lösningen och felsöka. 
 
@@ -161,6 +163,31 @@ Hur jag löste det:
 Jag använde ChatGPT, men testade lösningen själv och kontrollerade att den fungerade. 
 Jag testade bland annat att hämta ombud, välja ett ombud och få fram en beräknad leveranstid. Jag kontrollerade också att leveranssätt och valt ombud sparades tillsammans med ordern. 
 Hela tiden testade jag så att funktioner och hämtningar blev rätt. 
+
+---
+
+## Labb 6 – Google-autentisering
+
+Inloggningsflödet
+I Sparkle använder jag Google OAuth för att kunder ska kunna logga in med sitt Google-konto.
+När kunden klickar på logga in med Google så skickas denne vidare till Google för att godkänna inloggningen.
+Min server skapar då ett state, en nonce och en PKCE-kod som används under inloggningen.
+När kunden har godkänt inloggningen skickar Google tillbaka kunden till min callback-route på servern. Där kontrolleras state och sen används PKCE när servern byter Googles inloggningskod mot tokens.
+State skyddar mot att någon försöker skicka ett falskt inloggningssvar. 
+PKCE skyddar inloggningskoden från att kunna användas av någon annan. 
+Nonce används för att kontrollera att ID-token hör till rätt inloggning.
+
+Tokens
+Google skickar tillbaka ett tokensvar till servern. Jag använder ID-token för att kontrollera användarens identitet och hämta uppgifter som Googles unika användar-ID (sub), e-postadress och namn.
+Jag använder inte Googles access token eller refresh token i webbshoppen eftersom jag inte behöver komma åt några andra Google-tjänster i dagsläget. Jag har därför inte heller någon kod som sparar dessa tokens.
+Kunden identifieras med Googles sub, som sparas i kolumnen google_sub i Supabase-tabellen customers.
+Efter att användaren har verifierats skapar min server en egen JWT som används för att hålla kunden inloggad (i 7 dagar).
+
+Session eller JWT
+Jag valde att använda en egen JWT i stället för en traditionell serversession. JWT innehåller info som servern kan kontrollera för att identifiera den inloggade kunden vid kommande anrop.
+JWT sparas i en cookie som heter sparkle_session och gäller i 7 dagar.
+Cookien har inställningen HttpOnly, vilket innebär att JavaScript i webbläsaren inte kan läsa den. I produktion används även Secure så att cookien bara skickas över HTTPS. SameSite är inställt på Lax.
+Jag valde att göra såhär eftersom den passar Express-servern och gör att inloggningen kan hanteras på serversidan utan att JWT behöver sparas i localStorage.
 
 ## Testning
 
