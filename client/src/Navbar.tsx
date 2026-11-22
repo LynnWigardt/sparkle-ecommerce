@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { useState, useEffect } from 'react'
 import '../../css/style.css'
@@ -9,7 +9,6 @@ function Navbar() {
   const [logoutError, setLogoutError] = useState('')
   const [loginMessage, setLoginMessage] = useState('')
   const location = useLocation()
-  const navigate = useNavigate()
 
 // Kontrollerar om kunden har avbrutit Google-inloggningen.
 useEffect(() => {
