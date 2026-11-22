@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import AdminPage from './AdminPage'
 import SearchPage from './SearchPage'

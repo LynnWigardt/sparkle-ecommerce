@@ -136,6 +136,14 @@ router.get('/google/callback', async (req, res) => {
   res.clearCookie('google_nonce', cookieOptions)
   res.clearCookie('google_code_verifier', cookieOptions)
 
+  // Kontrollerar om kunden har avbrutit Google-inloggningen.
+  if (req.query.error === 'access_denied') {
+    res.redirect(
+      `${process.env.CLIENT_URL}?login=cancelled`
+    )
+    return
+  }
+
   if (!state || !nonce || !codeVerifier) {
     res.status(400).send('Inloggningen kunde inte verifieras. Försök igen.')
     return

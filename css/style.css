@@ -202,3 +202,10 @@ nav a {
 nav a:hover {
   color: #d4a5c5;
 }
+
+.login-message {
+  color: #e7e5e4;
+
+  padding: 10px 15px;
+  border-radius: 8px;
+}

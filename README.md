@@ -190,6 +190,21 @@ JWT sparas i en cookie som heter sparkle_session och gäller i 7 dagar.
 Cookien har inställningen HttpOnly, vilket innebär att JavaScript i webbläsaren inte kan läsa den. I produktion används även Secure så att cookien bara skickas över HTTPS. SameSite är inställt på Lax.
 Jag valde att göra såhär eftersom den passar Express-servern och gör att inloggningen kan hanteras på serversidan utan att JWT behöver sparas i localStorage.
 
+---
+
+## Labb 8 – Orderbekräftelse via e-post
+
+Orderbekräftelser skickas via Resend genom `server/src/integrations/emailAdapter.ts`.
+När Stripe-webhooken bekräftar en genomförd betalning markeras ordern som betald och en orderbekräftelse skickas till kunden. 
+Mejlet innehåller ordernummer, kundnamn, produkter, antal, priser och totalsumma.
+E-postintegrationen hanterar både HTML- och textformat, validerar Resends svar med Zod och använder timeout samt Idempotency-Key för att undvika dubbla utskick.
+
+Resend-nyckeln och avsändaradressen hanteras via serverns miljövariabler (`RESEND_API_KEY` och `EMAIL_FROM`).
+
+Om e-postutskicket misslyckas loggas felet utan att den genomförda betalningen påverkas.
+
+---
+
 ## Testning
 
 Under arbetet har jag bland annat testat:

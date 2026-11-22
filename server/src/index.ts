@@ -435,21 +435,6 @@ console.log('Bilden uppladdad:', uploadedImage.path)
   },
 )
 
-app.post('/api/test-supabase', async (_req, res) => {
-  const { data, error } = await supabase
-    .from('categories')
-    .insert({ name: 'Testkategori' })
-    .select()
-    .single()
-
-  if (error) {
-    res.status(500).json({ error: error.message })
-    return
-  }
-
-  res.json({ success: true, category: data })
-})
-
 // Importera produkter från leverantören
 app.post('/api/import-products', async (req, res) => {
   const format = req.query.format === 'xml' ? 'xml' : 'csv'
