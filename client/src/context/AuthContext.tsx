@@ -1,18 +1,18 @@
-
 import { createContext, useContext, useEffect, useState } from 'react'
 
-// Vilka uppgifter vi får tillbaka om den inloggade kunden.
+// Uppgifter om den inloggade kunden som sparas i frontend.
 type Customer = {
   id: number
   email: string
   name: string
 }
 
-// Info och vilka funktioner som syns på flera ställen i Sparkle.
+// Vilken kundinformation och vilka funktioner AuthContext gör tillgängligt.
 type AuthContextType = {
   customer: Customer | null
   loading: boolean
   refreshCustomer: () => Promise<void>
+  logout: () => Promise<void>
 }
 
 // Skapar ett gemensam context för kundens inloggningsstatus.
@@ -51,12 +51,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshCustomer()
   }, [])
 
+    // Loggar ut kunden och tar bort inloggningsuppgifterna.
+  async function logout() {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        throw new Error('Kunde inte logga ut.')
+      }
+
+      // Tar bort kunden från frontends inloggningsstatus.
+      setCustomer(null)
+    } catch (error) {
+      console.error('Kunde inte logga ut kunden:', error)
+      throw error
+    }
+  }
+
   // Gör kunduppgifterna och funktionen tillgängliga för alla komponenter.
   return (
-    <AuthContext.Provider value={{ customer, loading, refreshCustomer }}>
+    <AuthContext.Provider value={{ customer, loading, refreshCustomer, logout }}>
       {children}
     </AuthContext.Provider>
   )
+
 }
 
 // Hook som gör det enkelt för andra komponenterna att hämta info om kunden.

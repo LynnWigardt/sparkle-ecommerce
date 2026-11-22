@@ -1,4 +1,3 @@
-
 import express, { Router, type Request, type Response } from 'express'
 import Stripe from 'stripe'
 import stripe from './integrations/stripeAdapter.ts'

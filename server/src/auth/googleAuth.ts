@@ -16,11 +16,13 @@ async function getGoogleConfig() {
   }
 
   if (!googleConfig) {
-    googleConfig = await oidc.discovery(
-      new URL('https://accounts.google.com'),
-      clientId,
-      clientSecret
-    )
+googleConfig = await oidc.discovery(
+  new URL('https://accounts.google.com'),
+  clientId,
+  clientSecret,
+  undefined,
+  { timeout: 10 }
+)
   }
 
   return googleConfig
@@ -165,7 +167,7 @@ router.get('/google/callback', async (req, res) => {
     // Hämtar kundens uppgifter från Googles Id-token (bl.a. sub).
     const claims = tokens.claims()
 
-    if (!claims) {
+       if (!claims) {
       throw new Error('Google skickade ingen giltig ID-token.')
     }
 
@@ -323,6 +325,18 @@ router.get('/google/callback', async (req, res) => {
         res.status(500).json({ error: 'Kunde inte hämta orderhistoriken.' })
     }
     })
+
+        // Loggar ut kunden genom att ta bort inloggningscookien.
+        router.post('/logout', (_req, res) => {
+          res.clearCookie('sparkle_session', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+          })
+
+          res.json({ message: 'Du har loggats ut.' })
+        })
 
 
 export default router

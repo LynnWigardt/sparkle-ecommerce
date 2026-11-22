@@ -180,6 +180,7 @@ Nonce används för att kontrollera att ID-token hör till rätt inloggning.
 Tokens
 Google skickar tillbaka ett tokensvar till servern. Jag använder ID-token för att kontrollera användarens identitet och hämta uppgifter som Googles unika användar-ID (sub), e-postadress och namn.
 Jag använder inte Googles access token eller refresh token i webbshoppen eftersom jag inte behöver komma åt några andra Google-tjänster i dagsläget. Jag har därför inte heller någon kod som sparar dessa tokens.
+Min ID-token gäller i 60 minuter.
 Kunden identifieras med Googles sub, som sparas i kolumnen google_sub i Supabase-tabellen customers.
 Efter att användaren har verifierats skapar min server en egen JWT som används för att hålla kunden inloggad (i 7 dagar).
 

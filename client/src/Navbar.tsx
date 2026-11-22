@@ -1,11 +1,23 @@
-
 import { Link } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { useState } from 'react'
 import '../../css/style.css'
 
 // Hämtar kundens inloggningsstatus, id, e-mail och namn från AuthContext.
 function Navbar() {
-  const { customer, loading } = useAuth()
+  const { customer, loading, logout } = useAuth()
+  const [logoutError, setLogoutError] = useState('')
+
+// Hanterar utloggning och visar ett felmeddelande om det misslyckas.
+async function handleLogout() {
+  setLogoutError('')
+
+  try {
+    await logout()
+  } catch {
+    setLogoutError('Det gick inte att logga ut. Försök igen.')
+  }
+}
 
   return (
     <nav>
@@ -17,14 +29,22 @@ function Navbar() {
       {/* Visar google-inlogg eller kontolänkar beroende på inloggad eller utloggad */}
       {!loading && (
         customer ? (
-          <>
-            <Link to="/my-account">Mina sidor</Link>
-            <span>Hej, {customer.name}!</span>
-          </>
+      <>
+      <Link to="/my-account">Mina sidor</Link>
+      <a href="#" onClick={(e) => {
+        e.preventDefault()
+        handleLogout()
+      }}>
+        Logga ut
+      </a>
+      </>
         ) : (
           <a href="/api/auth/google">Logga in med Google</a>
         )
       )}
+
+      {logoutError && <p role="alert">{logoutError}</p>}
+      
     </nav>
   )
 }
